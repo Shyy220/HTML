@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TalkSTEM 3D Roller Coaster</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            background: #101827;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: grab;
+        }
+
+        .panel {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            padding: 13px 16px;
+            background: #101b2ddd;
+            border: 1px solid #62748c;
+            border-radius: 12px;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0 0 6px
+        }
+
+        .small {
+            font-size: 12px;
+            color: #c4d2e4
+        }
+
+        .controls {
+            position: fixed;
+            right: 14px;
+            top: 14px;
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            background: #233650;
+            color: white;
+            border: 1px solid #8295ae;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .hint {
+            position: fixed;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #101b2ddd;
+            padding: 10px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="c"></canvas>
+
+    <div class="panel">
+        <h1>TalkSTEM Roller Coaster</h1>
+        <div class="small">
+            1. Biggest Hill → 2. Teardrop Loop → 3. Finish Line
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="ride">▶ Ride Coaster</button>
+        <button id="reset">Reset View</button>
+        <button id="labels">Hide Labels</button>
+    </div>
+
+    <div class="hint">
+        Drag to rotate · Scroll to zoom · Click Ride Coaster
+    </div>
+
+    <script>
+        const canvas = document.getElementById("c");
+        const ctx = canvas.getContext("2d");
+
+        let W, H, dpr;
+        let yaw = -0.48;
+        let pitch = 0.26;
+        let zoom = 1;
+        let dragging = false;
+        let lastX = 0, lastY = 0;
+        let labels = true;
+        let playing = false;
+        let t = 0;
+
+        function resize() {
+            dpr = Math.min(devicePixelRatio || 1, 2);
+            W = innerWidth;
+            H = innerHeight;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            canvas.style.width = W + "px";
+            canvas.style.height = H + "px";
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        addEventListener("resize", resize);
+        resize();
+
+        const P = (x, y, z = 0) => ({ x, y, z });
+        const track = [];
+
+        function add(x, y, z = 0) {
+            track.push(P(x, y, z));
+        }
+
+        function bez(a, b, c, d, n) {
+            for (let i = 0; i <= n; i++) {
+                let u = i / n, v = 1 - u;
+                add(
+                    v * v * v * a.x + 3 * v * v * u * b.x + 3 * v * u * u * c.x + u * u * u * d.x,
+                    v * v * v * a.y + 3 * v * v * u * b.y + 3 * v * u * u * c.y + u * u * u * d.y
+                );
+            }
+        }
+
+        // 1. BIGGEST HILL AND FIRST DROP
+
+        bez(
+            P(-9, 1),
+            P(-8, 1.2),
+            P(-7.7, 9.2),
+            P(-4.9, 9.2),
+            38
+        );
+
+        bez(
+            P(-4.9, 9.2),
+            P(-3.3, 9.2),
+            P(-2.5, 2),
+            P(-0.6, 1.15),
+            36
+        );
+
+        // 2. TEARDROP-SHAPED LOOP
+
+        for (let i = 1; i <= 100; i++) {
+            const u = i / 100;
+            const a = -Math.PI / 2 + u * 2 * Math.PI;
+
+            const x = 1.55 +
+                1.5 * Math.sin(a) *
+                (0.78 + 0.22 * Math.cos(a));
+
+            const y = 1.15 +
+                5.15 * (1 + Math.cos(a)) / 2;
+
+            add(x, y);
+        }
+
+        // EXIT AFTER LOOP
+
+        bez(
+            P(1.55, 1.15),
+            P(2.8, 1.15),
+            P(4.2, 1),
+            P(5.3, 0.95),
+            22
+        );
+
+        bez(
+            P(5.3, 0.95),
+            P(6.3, 0.9),
+            P(7, 1),
+            P(8.2, 1),
+            18
+        );
+
+        // 3D PROJECTION
+
+        function project(p) {
+            let cy = Math.cos(yaw);
+            let sy = Math.sin(yaw);
+            let cp = Math.cos(pitch);
+            let sp = Math.sin(pitch);
+
+            let x = p.x * cy - p.z * sy;
+            let z = p.x * sy + p.z * cy;
+            let y = p.y * cp - z * sp;
+
+            z = p.y * sp + z * cp;
+
+            let s = Math.min(W, H) * 0.79 * zoom / (z + 15);
+
+            return {
+                x: W / 2 + x * s,
+                y: H * 0.66 - y * s,
+                s
+            };
+        }
+
+        function line(arr, color, width) {
+            ctx.beginPath();
+
+            arr.forEach((p, i) => {
+                let q = project(p);
+                if (i) ctx.lineTo(q.x, q.y);
+                else ctx.moveTo(q.x, q.y);
+            });
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.stroke();
+        }
+
+        function label(p, text, color) {
+            let q = project(p);
+            ctx.font = "bold 13px Arial";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#06101d";
+            ctx.fillText(text, q.x + 1, q.y + 1);
+            ctx.fillStyle = color;
+            ctx.fillText(text, q.x, q.y);
+        }
+
+        // GROUND
+
+        function ground() {
+            let corners = [
+                P(-11, 0, -4),
+                P(10, 0, -4),
+                P(10, 0, 4),
+                P(-11, 0, 4)
+            ].map(project);
+
+            ctx.beginPath();
+
+            corners.forEach((p, i) => {
+                if (i) ctx.lineTo(p.x, p.y);
+                else ctx.moveTo(p.x, p.y);
+            });
+
+            ctx.closePath();
+            ctx.fillStyle = "#1a2b3c";
+            ctx.fill();
+            ctx.strokeStyle = "#40556b";
+            ctx.stroke();
+
+            for (let x = -10; x <= 9; x += 2) {
+                line([P(x, 0.01, -4), P(x, 0.01, 4)],
+                    "#60758a44", 1);
+            }
+        }
+
+        // SUPPORT PILLARS
+
+        function supports() {
+
+            // Tall first hill supports
+            for (let i = 0; i <= 12; i++) {
+                let p = track[Math.floor(i * 37 / 12)];
+
+                if (p.y > 1.4) {
+                    line([
+                        P(p.x, p.y, 0),
+                        P(p.x, 0.08, 0)
+                    ], "#d7e3ef", 3);
+                }
+            }
+
+            // Loop supports
+            for (let x of [0.45, 1.55, 2.65]) {
+                line([
+                    P(x, 2, -0.12),
+                    P(x, 0.08, -0.12)
+                ], "#d7e3ef", 3);
+            }
+
+            line([
+                P(0.45, 0.1, -0.12),
+                P(2.65, 2, -0.12)
+            ], "#8197b1", 2);
+
+            line([
+                P(2.65, 0.1, -0.12),
+                P(0.45, 2, -0.12)
+            ], "#8197b1", 2);
+
+            // Final supports
+            for (let x of [4.3, 6.2, 7.9]) {
+                line([
+                    P(x, 1, 0),
+                    P(x, 0.08, 0)
+                ], "#d7e3ef", 3);
+            }
+        }
+
+        // FINISH LINE
+
+        function finish() {
+
+            line([
+                P(8.05, 0.08, -0.65),
+                P(8.05, 2.4, -0.65)
+            ], "white", 4);
+
+            line([
+                P(8.05, 0.08, 0.65),
+                P(8.05, 2.4, 0.65)
+            ], "white", 4);
+
+            line([
+                P(8.05, 2.3, -0.65),
+                P(8.05, 2.3, 0.65)
+            ], "white", 4);
+
+            for (let i = 0; i < 8; i++) {
+                let z = -0.56 + i * 0.16;
+
+                line([
+                    P(8.06, 2.05, z),
+                    P(8.06, 2.22, z)
+                ], i % 2 ? "#172033" : "white", 7);
+            }
+        }
+
+        // CART POSITION
+
+        function cartPoint(v) {
+            let f = v * (track.length - 1);
+            let i = Math.min(track.length - 2, Math.floor(f));
+            let u = f - i;
+
+            let a = track[i];
+            let b = track[i + 1];
+
+            return P(
+                a.x + (b.x - a.x) * u,
+                a.y + (b.y - a.y) * u,
+                0
+            );
+        }
+
+        function drawCart() {
+            if (!playing) return;
+
+            let q = project(cartPoint(t));
+
+            ctx.save();
+            ctx.translate(q.x, q.y);
+
+            ctx.fillStyle = "#ff5964";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.roundRect(-11, -7, 22, 11, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = "#182438";
+
+            for (let x of [-6, 6]) {
+                ctx.beginPath();
+                ctx.arc(x, 5, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // MAIN DISPLAY
+
+        function draw() {
+
+            let bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, "#101827");
+            bg.addColorStop(1, "#26394c");
+
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            ground();
+            supports();
+
+            // Main track
+            line(track, "#f5ad36", 5);
+
+            // Twin rails
+            line(
+                track.map(p => P(p.x, p.y, -0.16)),
+                "#58d9ee", 2.5
+            );
+
+            line(
+                track.map(p => P(p.x, p.y, 0.16)),
+                "#58d9ee", 2.5
+            );
+
+            // Cross ties
+            for (let i = 0; i < track.length; i += 4) {
+                let p = track[i];
+
+                line([
+                    P(p.x, p.y, -0.18),
+                    P(p.x, p.y, 0.18)
+                ], "#e3edf6", 1.4);
+            }
+
+            finish();
+
+            if (labels) {
+                label(P(-6.5, 10), "1. BIGGEST HILL + DROP", "#ffd37b");
+                label(P(1.55, 7), "2. TEARDROP LOOP", "#8deaff");
+                label(P(8.2, 2.8), "3. FINISH LINE", "white");
+            }
+
+            drawCart();
+
+            if (playing) {
+                t += 0.0018;
+
+                if (t >= 1) {
+                    t = 0;
+                    playing = false;
+                    document.getElementById("ride").textContent =
+                        "▶ Ride Coaster";
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+
+        // ROTATE WITH MOUSE
+
+        canvas.addEventListener("pointerdown", e => {
+            dragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            canvas.setPointerCapture(e.pointerId);
+        });
+
+        canvas.addEventListener("pointermove", e => {
+            if (!dragging) return;
+
+            yaw += (e.clientX - lastX) * 0.008;
+
+            pitch = Math.max(
+                -0.15,
+                Math.min(1.05,
+                    pitch + (e.clientY - lastY) * 0.006
+                )
+            );
+
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        canvas.addEventListener("pointerup", () => dragging = false);
+        canvas.addEventListener("pointercancel", () => dragging = false);
+
+        // ZOOM
+
+        canvas.addEventListener("wheel", e => {
+            e.preventDefault();
+
+            zoom = Math.max(
+                0.55,
+                Math.min(1.8,
+                    zoom * (e.deltaY > 0 ? 0.92 : 1.08)
+                )
+            );
+        }, { passive: false });
+
+        // BUTTONS
+
+        document.getElementById("ride").onclick = () => {
+            playing = !playing;
+
+            document.getElementById("ride").textContent =
+                playing ? "Ⅱ Pause Ride" : "▶ Ride Coaster";
+        };
+
+        document.getElementById("reset").onclick = () => {
+            yaw = -0.48;
+            pitch = 0.26;
+            zoom = 1;
+        };
+
+        document.getElementById("labels").onclick = () => {
+            labels = !labels;
+
+            document.getElementById("labels").textContent =
+                labels ? "Hide Labels" : "Show Labels";
+        };
+
+    </script>
+</body>
+
+</html>
