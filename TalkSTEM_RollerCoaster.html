@@ -3,23 +3,38 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Project ThunderLoop - TalkSTEM</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project ThunderLoop - Advanced 3D Engineering Simulation</title>
     <style>
+        :root {
+            --bg-dark: #070d17;
+            --panel-bg: rgba(13, 24, 40, 0.88);
+            --border-color: rgba(94, 134, 178, 0.45);
+            --accent-orange: #ff8c37;
+            --accent-cyan: #4deeea;
+            --accent-gold: #ffd369;
+            --accent-red: #ff5268;
+            --accent-green: #4cd97b;
+            --text-main: #f0f6fc;
+            --text-muted: #9fb4cc;
+        }
+
         * {
             box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         html,
         body {
             margin: 0;
+            padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background: #091321;
-            color: white;
-            font-family: Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
         canvas {
@@ -33,96 +48,319 @@
             cursor: grabbing;
         }
 
-        .panel {
+        /* Header & Info Panel */
+        .hud-panel {
             position: fixed;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .header-panel {
             top: 14px;
             left: 14px;
-            padding: 14px;
-            background: #101f32ee;
-            border: 1px solid #58718d;
-            border-radius: 12px;
-            max-width: 330px;
+            padding: 14px 16px;
+            max-width: 340px;
+            z-index: 10;
+        }
+
+        .header-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+            background: rgba(77, 238, 234, 0.12);
+            border: 1px solid rgba(77, 238, 234, 0.35);
+            padding: 2px 7px;
+            border-radius: 4px;
+            margin-bottom: 6px;
         }
 
         h1 {
-            font-size: 19px;
-            margin: 0 0 7px;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin: 0 0 6px 0;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
-        .sub {
-            font-size: 12px;
-            color: #c2d1e1;
-            line-height: 1.6;
+        .subtitle {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 8px;
         }
 
-        .controls {
-            position: fixed;
-            right: 14px;
-            top: 14px;
+        .stage-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 11px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 8px;
+        }
+
+        .stage-list li {
             display: flex;
-            gap: 7px;
+            align-items: center;
+            padding: 2.5px 0;
+            color: #cfe0f2;
+            transition: color 0.2s, transform 0.2s;
+        }
+
+        .stage-list li.active {
+            color: var(--accent-gold);
+            font-weight: 700;
+            transform: translateX(4px);
+        }
+
+        .stage-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #486280;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .stage-list li.active .stage-dot {
+            background: var(--accent-gold);
+            box-shadow: 0 0 8px var(--accent-gold);
+        }
+
+        /* Top Right Controls */
+        .controls-bar {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
             flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
         button {
-            background: #1b3550;
-            color: white;
-            border: 1px solid #7590ad;
+            background: rgba(24, 44, 70, 0.9);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 10px;
+            padding: 8px 12px;
+            font-size: 11.5px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
 
         button:hover {
-            background: #345071;
+            background: rgba(45, 78, 118, 0.95);
+            border-color: #8ab4e2;
+            transform: translateY(-1px);
         }
 
-        .legend {
-            position: fixed;
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, #e86b24, #d14919);
+            border-color: #ff9c63;
+            color: white;
+        }
+
+        button.primary:hover {
+            background: linear-gradient(135deg, #f57a33, #e35624);
+        }
+
+        button.active-toggle {
+            background: rgba(34, 115, 130, 0.9);
+            border-color: var(--accent-cyan);
+            color: #ffffff;
+        }
+
+        /* Telemetry Panel */
+        .telemetry-panel {
+            top: 108px;
+            right: 14px;
+            padding: 12px 14px;
+            width: 250px;
+            z-index: 10;
+        }
+
+        .panel-title {
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .metric-box {
+            background: rgba(7, 15, 26, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 7px;
+            padding: 7px 9px;
+        }
+
+        .metric-label {
+            font-size: 9.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .metric-value {
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'Consolas', 'Courier New', monospace;
+            color: #ffffff;
+            margin-top: 2px;
+        }
+
+        .metric-unit {
+            font-size: 10px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .energy-bars {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .bar-row {
+            margin-bottom: 6px;
+        }
+
+        .bar-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+
+        .bar-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.08s linear;
+        }
+
+        .fill-pe {
+            background: linear-gradient(90deg, #3a86ff, #4deeea);
+        }
+
+        .fill-ke {
+            background: linear-gradient(90deg, #ff5268, #ffbe0b);
+        }
+
+        /* Legend Panel */
+        .legend-panel {
             left: 14px;
             bottom: 14px;
-            background: #101f32ee;
-            border: 1px solid #58718d;
-            border-radius: 12px;
-            padding: 12px;
+            padding: 12px 14px;
             font-size: 11px;
-            line-height: 1.7;
+            line-height: 1.65;
+            max-width: 260px;
+            z-index: 10;
         }
 
-        .hint {
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .swatch {
+            width: 12px;
+            height: 4px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .swatch-box {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Bottom Hint */
+        .hint-pill {
             position: fixed;
             bottom: 14px;
             left: 50%;
             transform: translateX(-50%);
-            background: #101f32ee;
-            border: 1px solid #58718d;
-            border-radius: 18px;
-            padding: 10px;
+            padding: 8px 16px;
+            border-radius: 20px;
             font-size: 11px;
+            color: #d6e4f2;
             white-space: nowrap;
+            z-index: 10;
         }
 
-        @media(max-width:650px) {
-            .panel {
-                max-width: 220px;
-            }
-
-            .controls {
-                top: auto;
-                bottom: 60px;
-                right: 8px;
-            }
-
-            .legend {
+        @media (max-width: 820px) {
+            .telemetry-panel {
                 display: none;
             }
 
-            .hint {
-                left: 8px;
-                right: 8px;
+            .legend-panel {
+                display: none;
+            }
+
+            .header-panel {
+                max-width: 240px;
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 15px;
+            }
+
+            .hint-pill {
+                left: 10px;
+                right: 10px;
                 transform: none;
                 text-align: center;
                 white-space: normal;
+                font-size: 10px;
             }
         }
     </style>
@@ -132,844 +370,1463 @@
 
     <canvas id="scene"></canvas>
 
-    <div class="panel">
+    <!-- Top Left Engineering Overview -->
+    <div class="hud-panel header-panel" id="headerPanel">
+        <div class="header-badge">TALKSTEM · GRADE 8 ENGINEERING</div>
         <h1>PROJECT THUNDERLOOP</h1>
-        <div class="sub">
-            TALKSTEM · GRADE 8 ENGINEERING MODEL<br>
-            1. Giant First Hill and Drop<br>
-            2. Teardrop Vertical Loop<br>
-            3. Finish Line<br>
-            Track · Supports · Station · Safety Features
+        <div class="subtitle">
+            3D Structural Truss Coaster Simulation · Catmull-Rom Spline &amp; Conservation of Energy Physics
+        </div>
+        <ul class="stage-list" id="stageList">
+            <li data-stage="0"><span class="stage-dot"></span>0. Station &amp; Chain Lift Ascent</li>
+            <li data-stage="1"><span class="stage-dot"></span>1. Giant First Hill &amp; Steep Drop</li>
+            <li data-stage="2"><span class="stage-dot"></span>2. Teardrop Vertical Loop</li>
+            <li data-stage="3"><span class="stage-dot"></span>3. High-Banked Overbank Turn</li>
+            <li data-stage="4"><span class="stage-dot"></span>4. Zero-G Camelback &amp; Corkscrew</li>
+            <li data-stage="5"><span class="stage-dot"></span>5. Low-Ground Helix &amp; Bunny Hops</li>
+            <li data-stage="6"><span class="stage-dot"></span>6. Magnetic Brake Run &amp; Finish Line</li>
+        </ul>
+    </div>
+
+    <!-- Top Right Controls -->
+    <div class="controls-bar">
+        <div class="btn-group">
+            <button id="btnRide" class="primary">▶ START RIDE</button>
+            <button id="btnCam">🎥 CAM: ORBIT</button>
+            <button id="btnSpeed">⚡ 1.0x</button>
+        </div>
+        <div class="btn-group">
+            <button id="btnLabels" class="active-toggle">🏷️ LABELS</button>
+            <button id="btnForces">📐 VECTORS</button>
+            <button id="btnNight">🌙 NIGHT</button>
+            <button id="btnSound">🔇 AUDIO</button>
+            <button id="btnReset">↺ RESET</button>
         </div>
     </div>
 
-    <div class="controls">
-        <button id="ride">▶ START RIDE</button>
-        <button id="labels">HIDE LABELS</button>
-        <button id="reset">RESET VIEW</button>
+    <!-- Live Physics & Telemetry HUD -->
+    <div class="hud-panel telemetry-panel" id="telemetryPanel">
+        <div class="panel-title">
+            <span>LIVE TELEMETRY</span>
+            <span id="statusBadge" style="color: #4cd97b;">READY</span>
+        </div>
+        <div class="telemetry-grid">
+            <div class="metric-box">
+                <div class="metric-label">Velocity</div>
+                <div class="metric-value"><span id="valSpeed">0.0</span> <span class="metric-unit">mph</span></div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Elevation</div>
+                <div class="metric-value"><span id="valHeight">12</span> <span class="metric-unit">ft</span></div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Vertical G</div>
+                <div class="metric-value"><span id="valG">1.0</span> <span class="metric-unit">G</span></div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Track Bank</div>
+                <div class="metric-value"><span id="valBank">0</span> <span class="metric-unit">°</span></div>
+            </div>
+        </div>
+        <div class="energy-bars">
+            <div class="bar-row">
+                <div class="bar-header">
+                    <span>Potential Energy (PE)</span>
+                    <span id="pctPE">10%</span>
+                </div>
+                <div class="bar-track">
+                    <div class="bar-fill fill-pe" id="barPE" style="width: 10%;"></div>
+                </div>
+            </div>
+            <div class="bar-row" style="margin-bottom: 0;">
+                <div class="bar-header">
+                    <span>Kinetic Energy (KE)</span>
+                    <span id="pctKE">0%</span>
+                </div>
+                <div class="bar-track">
+                    <div class="bar-fill fill-ke" id="barKE" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="legend">
-        <b>ENGINEERING MODEL KEY</b><br>
-        🟠 Main track<br>
-        🔵 Twin running rails<br>
-        ⚪ Steel support columns<br>
-        🔴 Moving coaster cart<br>
-        🟢 Landscaping<br>
-        <br>
-        <b>Additional features</b><br>
-        • Cross-bracing<br>
-        • Boarding station<br>
-        • Support footings<br>
-        • Safety fencing<br>
-        • Maintenance paths
+    <!-- Bottom Left Structural Key -->
+    <div class="hud-panel legend-panel" id="legendPanel">
+        <div class="panel-title" style="margin-bottom: 6px;">STRUCTURAL KEY</div>
+        <div class="legend-item"><span class="swatch" style="background: #ff9e3b; height: 5px;"></span>Box-Girder Spine
+        </div>
+        <div class="legend-item"><span class="swatch" style="background: #52f2ff;"></span>Tubular Running Rails</div>
+        <div class="legend-item"><span class="swatch" style="background: #e1ebf5;"></span>Steel A-Frame Bents &amp;
+            Braces</div>
+        <div class="legend-item"><span class="swatch-box" style="background: #ff5268;"></span>4-Car Articulated Train
+        </div>
+        <div class="legend-item"><span class="swatch-box" style="background: #ffd369;"></span>Anti-Rollback Chain / Fin
+            Brakes</div>
+        <div class="legend-item"><span class="swatch-box" style="background: #3d7a4c;"></span>Landscaping, Pond &amp;
+            Safety Zone</div>
     </div>
 
-    <div class="hint">
-        Drag to rotate · Scroll to zoom · Press START RIDE
+    <!-- Bottom Hint -->
+    <div class="hud-panel hint-pill">
+        Drag to Orbit · Scroll to Zoom · Switch to <b>POV</b> or <b>CHASE</b> Camera · Press <b>START RIDE</b>
     </div>
 
     <script>
+        /**
+         * PROJECT THUNDERLOOP - 3D ENGINEERING & PHYSICS SIMULATION
+         * Features:
+         * - True 3D Catmull-Rom & Parametric Spline Track with Frenet-Serret + Custom Banking Frames
+         * - Triangular Box-Truss Spine, Dual Tubular Rails, Cross-Ties, Catwalks & Magnetic Brake Fins
+         * - Depth-Sorted (Painter's Algorithm) 3D Polygon & Line Renderer with Perspective Projection
+         * - Conservation of Mechanical Energy Physics Engine (PE + KE + Friction + Chain Lift + Brakes)
+         * - 4-Car Articulated Coaster Train with Lap Bars, Wheels, Headlight & Motion Trail
+         * - Interactive Camera Modes (Orbit, First-Person Rider POV, Dynamic Chase Cam)
+         * - Web Audio API Procedural Sound Synthesizer (Chain Lift Clack, Track Roar, Wind, Brakes)
+         */
 
-        const canvas = document.getElementById("scene");
-        const ctx = canvas.getContext("2d");
+        (() => {
+            'use strict';
 
-        let W, H, D;
-        let yaw = -0.55;
-        let pitch = 0.27;
-        let zoom = 1;
+            // ============================================================================
+            // 1. CANVAS & VIEWPORT SETUP
+            // ============================================================================
+            const canvas = document.getElementById('scene');
+            const ctx = canvas.getContext('2d', { alpha: false });
 
-        let dragging = false;
-        let lastX = 0;
-        let lastY = 0;
+            let W = 0;
+            let H = 0;
+            let DPR = 1;
 
-        let labels = true;
-        let riding = false;
-        let rideT = 0;
+            function handleResize() {
+                DPR = Math.min(window.devicePixelRatio || 1, 2);
+                W = window.innerWidth;
+                H = window.innerHeight;
+                canvas.width = Math.floor(W * DPR);
+                canvas.height = Math.floor(H * DPR);
+                canvas.style.width = W + 'px';
+                canvas.style.height = H + 'px';
+                ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+            }
+            window.addEventListener('resize', handleResize);
+            handleResize();
 
-        function resize() {
-            D = Math.min(devicePixelRatio || 1, 2);
-            W = innerWidth;
-            H = innerHeight;
-
-            canvas.width = W * D;
-            canvas.height = H * D;
-
-            canvas.style.width = W + "px";
-            canvas.style.height = H + "px";
-
-            ctx.setTransform(D, 0, 0, D, 0, 0);
-        }
-
-        addEventListener("resize", resize);
-        resize();
-
-        const P = (x, y, z = 0) => ({ x, y, z });
-
-
-        // ===================================
-        // 3D PROJECTION
-        // ===================================
-
-        function project(p) {
-
-            let cy = Math.cos(yaw);
-            let sy = Math.sin(yaw);
-
-            let cp = Math.cos(pitch);
-            let sp = Math.sin(pitch);
-
-            let x = p.x * cy - p.z * sy;
-            let z = p.x * sy + p.z * cy;
-
-            let y = p.y * cp - z * sp;
-
-            z = p.y * sp + z * cp;
-
-            let s = Math.min(W, H) * 0.79 * zoom / (z + 20);
-
-            return {
-                x: W / 2 + x * s,
-                y: H * 0.66 - y * s,
-                s: s
+            // ============================================================================
+            // 2. 3D VECTOR MATH LIBRARY
+            // ============================================================================
+            const Vec3 = {
+                create: (x = 0, y = 0, z = 0) => ({ x, y, z }),
+                add: (a, b) => ({ x: a.x + b.x, y: a.y + b.y, z: a.z + b.z }),
+                sub: (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }),
+                scale: (a, s) => ({ x: a.x * s, y: a.y * s, z: a.z * s }),
+                dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
+                cross: (a, b) => ({
+                    x: a.y * b.z - a.z * b.y,
+                    y: a.z * b.x - a.x * b.z,
+                    z: a.x * b.y - a.y * b.x
+                }),
+                len: (a) => Math.hypot(a.x, a.y, a.z),
+                dist: (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z),
+                normalize: (a) => {
+                    const l = Math.hypot(a.x, a.y, a.z) || 1;
+                    return { x: a.x / l, y: a.y / l, z: a.z / l };
+                },
+                lerp: (a, b, t) => ({
+                    x: a.x + (b.x - a.x) * t,
+                    y: a.y + (b.y - a.y) * t,
+                    z: a.z + (b.z - a.z) * t
+                })
             };
-        }
 
-        function line(points, color, width = 2) {
+            function rotateAroundAxis(v, axis, angle) {
+                const c = Math.cos(angle);
+                const s = Math.sin(angle);
+                const dot = Vec3.dot(axis, v);
+                const cross = Vec3.cross(axis, v);
+                return {
+                    x: v.x * c + cross.x * s + axis.x * dot * (1 - c),
+                    y: v.y * c + cross.y * s + axis.y * dot * (1 - c),
+                    z: v.z * c + cross.z * s + axis.z * dot * (1 - c)
+                };
+            }
 
-            ctx.beginPath();
+            // ============================================================================
+            // 3. SIMULATION STATE & CAMERA CONFIGURATION
+            // ============================================================================
+            const state = {
+                riding: false,
+                speedMultiplier: 1.0,
+                showLabels: true,
+                showVectors: false,
+                nightMode: true,
+                soundEnabled: false,
+                camMode: 'ORBIT', // 'ORBIT' | 'POV' | 'CHASE'
 
-            points.forEach((p, i) => {
-                let q = project(p);
+                // Orbit camera parameters
+                yaw: -0.52,
+                pitch: 0.30,
+                zoom: 1.0,
+                target: { x: 0, y: 3.2, z: 0 },
 
-                if (i === 0) {
-                    ctx.moveTo(q.x, q.y);
+                // Active camera basis (computed per frame)
+                camPos: { x: 0, y: 12, z: 26 },
+                camForward: { x: 0, y: 0, z: -1 },
+                camRight: { x: 1, y: 0, z: 0 },
+                camUp: { x: 0, y: 1, z: 0 },
+                fov: 680,
+
+                // Train physics state
+                dist: 2.2,         // Distance along track in world units
+                velocity: 0,       // Units per second
+                gForce: 1.0,
+                currentStage: 0,
+                time: 0
+            };
+
+            // ============================================================================
+            // 4. PROCEDURAL WEB AUDIO ENGINE (SYNTHESIZER)
+            // ============================================================================
+            const SoundEngine = (() => {
+                let audioCtx = null;
+                let masterGain = null;
+                let windGain = null;
+                let windFilter = null;
+                let clackTimer = 0;
+
+                function init() {
+                    if (audioCtx) return;
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContext();
+
+                    masterGain = audioCtx.createGain();
+                    masterGain.gain.value = 0.28;
+                    masterGain.connect(audioCtx.destination);
+
+                    // Continuous wind / rail noise buffer
+                    const bufferSize = audioCtx.sampleRate * 2;
+                    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const output = noiseBuffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        output[i] = Math.random() * 2 - 1;
+                    }
+
+                    const whiteNoise = audioCtx.createBufferSource();
+                    whiteNoise.buffer = noiseBuffer;
+                    whiteNoise.loop = true;
+
+                    windFilter = audioCtx.createBiquadFilter();
+                    windFilter.type = 'bandpass';
+                    windFilter.frequency.value = 180;
+                    windFilter.Q.value = 1.4;
+
+                    windGain = audioCtx.createGain();
+                    windGain.gain.value = 0.0;
+
+                    whiteNoise.connect(windFilter);
+                    windFilter.connect(windGain);
+                    windGain.connect(masterGain);
+                    whiteNoise.start();
+                }
+
+                function playClick(pitch = 220, duration = 0.035, vol = 0.25) {
+                    if (!audioCtx || !state.soundEnabled) return;
+                    const osc = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(pitch, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(65, audioCtx.currentTime + duration);
+
+                    g.gain.setValueAtTime(vol, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                    osc.connect(g);
+                    g.connect(masterGain);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + duration);
+                }
+
+                function update(dt, velocity, stage, riding) {
+                    if (!audioCtx) return;
+                    if (audioCtx.state === 'suspended' && state.soundEnabled) {
+                        audioCtx.resume();
+                    }
+                    if (!state.soundEnabled || !riding) {
+                        if (windGain) windGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                        return;
+                    }
+
+                    // Rail roar & wind rush proportional to velocity
+                    const speedNorm = Math.min(velocity / 18, 1.2);
+                    windFilter.frequency.setTargetAtTime(120 + speedNorm * 650, audioCtx.currentTime, 0.08);
+                    windGain.gain.setTargetAtTime(Math.min(speedNorm * 0.45, 0.5), audioCtx.currentTime, 0.08);
+
+                    // Chain lift anti-rollback dog clacking
+                    if (stage === 0 && velocity > 0.5) {
+                        clackTimer += dt * velocity * 3.8;
+                        if (clackTimer >= 1) {
+                            clackTimer = 0;
+                            playClick(340, 0.03, 0.22);
+                        }
+                    } else if (stage === 6 && velocity > 1.5) {
+                        // Magnetic brake hum/whir
+                        clackTimer += dt * 18;
+                        if (clackTimer >= 1) {
+                            clackTimer = 0;
+                            playClick(520, 0.04, 0.08);
+                        }
+                    }
+                }
+
+                return { init, update };
+            })();
+
+            // ============================================================================
+            // 5. ADVANCED 3D TRACK SPLINE GENERATOR
+            // ============================================================================
+            /**
+             * Builds a continuous, smooth, high-resolution 3D roller coaster layout that
+             * preserves the 3 signature TalkSTEM landmarks (1. Giant First Hill & Drop,
+             * 2. Teardrop Vertical Loop, 3. Finish Line) while expanding into an intricate
+             * 3D multi-element engineering layout with overbanked turns, a zero-G camelback,
+             * a 360-degree corkscrew, and a low-ground helix.
+             */
+            const trackNodes = [];
+            let totalTrackLength = 0;
+
+            function evalCatmullRom(p0, p1, p2, p3, t) {
+                const t2 = t * t;
+                const t3 = t2 * t;
+                return {
+                    x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+                    y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+                    z: 0.5 * ((2 * p1.z) + (-p0.z + p2.z) * t + (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * t2 + (-p0.z + 3 * p1.z - 3 * p2.z + p3.z) * t3),
+                    bank: p1.bank + (p2.bank - p1.bank) * (t * t * (3 - 2 * t)),
+                    stage: t < 0.5 ? p1.stage : p2.stage,
+                    type: t < 0.5 ? p1.type : p2.type
+                };
+            }
+
+            function buildTrack() {
+                const raw = [];
+                const deg = (d) => (d * Math.PI) / 180;
+
+                // Helper to add a Catmull-Rom segment list
+                function addSplineSection(waypoints, samplesPerSeg) {
+                    for (let i = 0; i < waypoints.length - 1; i++) {
+                        const p0 = waypoints[Math.max(0, i - 1)];
+                        const p1 = waypoints[i];
+                        const p2 = waypoints[i + 1];
+                        const p3 = waypoints[Math.min(waypoints.length - 1, i + 2)];
+                        for (let s = 0; s < samplesPerSeg; s++) {
+                            const t = s / samplesPerSeg;
+                            raw.push(evalCatmullRom(p0, p1, p2, p3, t));
+                        }
+                    }
+                }
+
+                // --- SECTION A: STATION, PRE-DROP DIP & GIANT FIRST HILL (STAGE 0 & 1) ---
+                const firstHillWaypoints = [
+                    { x: -13.5, y: 1.15, z: -2.2, bank: 0, stage: 0, type: 'station' },
+                    { x: -11.2, y: 1.15, z: -2.2, bank: 0, stage: 0, type: 'station' },
+                    { x: -9.6, y: 1.05, z: -2.2, bank: 0, stage: 0, type: 'lift' },
+                    { x: -8.5, y: 3.6, z: -2.2, bank: 0, stage: 0, type: 'lift' },
+                    { x: -7.4, y: 7.4, z: -2.2, bank: 0, stage: 0, type: 'lift' },
+                    { x: -6.3, y: 10.6, z: -2.2, bank: 0, stage: 1, type: 'crest' }, // Peak: 10.6 units (~106 ft)
+                    { x: -5.1, y: 11.1, z: -2.2, bank: 0, stage: 1, type: 'crest' },
+                    { x: -4.1, y: 9.2, z: -2.2, bank: 0, stage: 1, type: 'drop' },
+                    { x: -3.2, y: 5.0, z: -2.2, bank: 0, stage: 1, type: 'drop' },
+                    { x: -2.2, y: 1.75, z: -2.2, bank: 0, stage: 1, type: 'valley' },
+                    { x: -1.1, y: 1.25, z: -2.2, bank: 0, stage: 2, type: 'loop_entry' }
+                ];
+                addSplineSection(firstHillWaypoints, 14);
+
+                // --- SECTION B: SIGNATURE TEARDROP VERTICAL LOOP (STAGE 2) ---
+                // Clothoid / teardrop geometry reduces G-forces at the top of the loop
+                const loopCenterX = -1.1;
+                const loopBaseY = 1.25;
+                const loopStartZ = -2.2;
+                const loopEndZ = -1.45; // Subtle lateral offset so entry and exit rails clear cleanly
+                const loopSamples = 110;
+
+                for (let i = 0; i <= loopSamples; i++) {
+                    const u = i / loopSamples;
+                    const a = u * Math.PI * 2;
+                    // Teardrop horizontal pinch near the apex (cos(a) = -1)
+                    const x = loopCenterX + 1.85 * Math.sin(a) * (0.74 + 0.26 * Math.cos(a));
+                    const y = loopBaseY + 6.1 * (1 - Math.cos(a)) * 0.5;
+                    // Smooth S-curve lateral shift across the loop
+                    const smoothU = u * u * (3 - 2 * u);
+                    const z = loopStartZ + (loopEndZ - loopStartZ) * smoothU;
+                    raw.push({
+                        x,
+                        y,
+                        z,
+                        bank: 0,
+                        stage: 2,
+                        type: 'loop'
+                    });
+                }
+
+                // --- SECTION C: HIGH-BANKED OVERBANK TURN -> ZERO-G CAMELBACK -> CORKSCREW -> HELIX -> FINISH ---
+                const secondHalfWaypoints = [
+                    { x: -1.1, y: 1.25, z: -1.45, bank: deg(0), stage: 2, type: 'loop_exit' },
+                    { x: 1.4, y: 1.4, z: -1.45, bank: deg(18), stage: 3, type: 'normal' },
+                    { x: 4.4, y: 3.4, z: -1.1, bank: deg(58), stage: 3, type: 'overbank' },
+                    { x: 7.2, y: 6.4, z: 0.4, bank: deg(82), stage: 3, type: 'overbank' }, // 82° Overbank Turn
+                    { x: 8.6, y: 6.9, z: 2.8, bank: deg(75), stage: 3, type: 'overbank' },
+                    { x: 7.4, y: 5.2, z: 5.1, bank: deg(38), stage: 3, type: 'overbank' },
+                    { x: 4.8, y: 2.3, z: 5.8, bank: deg(8), stage: 4, type: 'normal' },
+
+                    // Zero-G Airtime Camelback Hill
+                    { x: 2.0, y: 5.6, z: 5.8, bank: deg(0), stage: 4, type: 'airtime' },
+                    { x: -0.8, y: 2.0, z: 5.6, bank: deg(-10), stage: 4, type: 'normal' },
+
+                    // Corkscrew Inversion / Barrel Roll Transition
+                    { x: -3.2, y: 3.8, z: 4.8, bank: deg(-85), stage: 4, type: 'corkscrew' },
+                    { x: -5.4, y: 5.2, z: 3.4, bank: deg(-175), stage: 4, type: 'corkscrew' },
+                    { x: -7.5, y: 3.6, z: 2.0, bank: deg(-265), stage: 4, type: 'corkscrew' },
+                    { x: -9.2, y: 1.8, z: 1.2, bank: deg(-350), stage: 5, type: 'normal' },
+
+                    // Low-Ground High-Speed Helix
+                    { x: -11.4, y: 1.5, z: 2.2, bank: deg(-55), stage: 5, type: 'helix' },
+                    { x: -12.0, y: 2.1, z: 4.6, bank: deg(-62), stage: 5, type: 'helix' },
+                    { x: -9.8, y: 2.6, z: 6.3, bank: deg(-60), stage: 5, type: 'helix' },
+                    { x: -6.8, y: 2.2, z: 5.9, bank: deg(-45), stage: 5, type: 'helix' },
+                    { x: -4.2, y: 1.4, z: 3.8, bank: deg(-20), stage: 5, type: 'normal' },
+
+                    // Speed Bunny Hop & Final S-Curve into Magnetic Brake Run + Finish Line
+                    { x: -1.4, y: 2.7, z: 2.1, bank: deg(0), stage: 5, type: 'airtime' },
+                    { x: 1.4, y: 1.15, z: 1.4, bank: deg(12), stage: 6, type: 'normal' },
+                    { x: 4.2, y: 1.15, z: 0.6, bank: deg(0), stage: 6, type: 'brakes' },
+                    { x: 7.0, y: 1.15, z: 0.2, bank: deg(0), stage: 6, type: 'brakes' },
+                    { x: 9.6, y: 1.15, z: 0.2, bank: deg(0), stage: 6, type: 'finish' }, // Signature 3. Finish Line
+                    { x: 11.4, y: 1.15, z: 0.2, bank: deg(0), stage: 6, type: 'finish' }
+                ];
+                addSplineSection(secondHalfWaypoints, 14);
+
+                // Resample uniformly by arc length and compute local 3D coordinate frames (Forward, Normal, Binormal)
+                let accumDist = 0;
+                const rawWithDist = [{ ...raw[0], dist: 0 }];
+                for (let i = 1; i < raw.length; i++) {
+                    const d = Vec3.dist(raw[i - 1], raw[i]);
+                    if (d > 0.0001) {
+                        accumDist += d;
+                        rawWithDist.push({ ...raw[i], dist: accumDist });
+                    }
+                }
+                totalTrackLength = accumDist;
+
+                const targetStep = 0.16;
+                const count = Math.floor(totalTrackLength / targetStep);
+                let cursor = 0;
+
+                for (let i = 0; i <= count; i++) {
+                    const targetD = (i / count) * totalTrackLength;
+                    while (cursor < rawWithDist.length - 2 && rawWithDist[cursor + 1].dist < targetD) {
+                        cursor++;
+                    }
+                    const a = rawWithDist[cursor];
+                    const b = rawWithDist[cursor + 1];
+                    const span = b.dist - a.dist || 1;
+                    const frac = Math.max(0, Math.min(1, (targetD - a.dist) / span));
+
+                    trackNodes.push({
+                        pos: Vec3.lerp(a, b, frac),
+                        bank: a.bank + (b.bank - a.bank) * frac,
+                        dist: targetD,
+                        stage: frac < 0.5 ? a.stage : b.stage,
+                        type: frac < 0.5 ? a.type : b.type,
+                        forward: { x: 1, y: 0, z: 0 },
+                        up: { x: 0, y: 1, z: 0 },
+                        right: { x: 0, y: 0, z: 1 },
+                        curvature: 0
+                    });
+                }
+
+                // Compute smooth Forward, Up, and Right vectors along the entire 3D track
+                // Using continuous parallel transport so vertical loops & corkscrews never flip!
+                let prevUp = { x: 0, y: 1, z: 0 };
+
+                for (let i = 0; i < trackNodes.length; i++) {
+                    const prev = trackNodes[Math.max(0, i - 1)].pos;
+                    const next = trackNodes[Math.min(trackNodes.length - 1, i + 1)].pos;
+                    const fwd = Vec3.normalize(Vec3.sub(next, prev));
+                    trackNodes[i].forward = fwd;
+
+                    if (i === 0) {
+                        const worldUp = { x: 0, y: 1, z: 0 };
+                        const right = Vec3.normalize(Vec3.cross(fwd, worldUp));
+                        prevUp = Vec3.normalize(Vec3.cross(right, fwd));
+                    } else {
+                        const prevFwd = trackNodes[i - 1].forward;
+                        const axis = Vec3.cross(prevFwd, fwd);
+                        const axisLen = Vec3.len(axis);
+                        if (axisLen > 1e-6) {
+                            const angle = Math.atan2(axisLen, Vec3.dot(prevFwd, fwd));
+                            prevUp = Vec3.normalize(rotateAroundAxis(prevUp, Vec3.scale(axis, 1 / axisLen), angle));
+                        }
+                    }
+
+                    // Apply intentional track banking roll around the forward tangent
+                    const bankedUp = Vec3.normalize(rotateAroundAxis(prevUp, fwd, trackNodes[i].bank));
+                    const bankedRight = Vec3.normalize(Vec3.cross(fwd, bankedUp));
+
+                    trackNodes[i].up = bankedUp;
+                    trackNodes[i].right = bankedRight;
+                }
+            }
+
+            buildTrack();
+
+            // Helper to sample interpolated track state at any distance `d`
+            function sampleTrackAtDistance(d) {
+                const clamped = Math.max(0, Math.min(totalTrackLength - 0.001, d));
+                const exactIdx = (clamped / totalTrackLength) * (trackNodes.length - 1);
+                const i0 = Math.floor(exactIdx);
+                const i1 = Math.min(trackNodes.length - 1, i0 + 1);
+                const t = exactIdx - i0;
+
+                const n0 = trackNodes[i0];
+                const n1 = trackNodes[i1];
+
+                return {
+                    pos: Vec3.lerp(n0.pos, n1.pos, t),
+                    forward: Vec3.normalize(Vec3.lerp(n0.forward, n1.forward, t)),
+                    up: Vec3.normalize(Vec3.lerp(n0.up, n1.up, t)),
+                    right: Vec3.normalize(Vec3.lerp(n0.right, n1.right, t)),
+                    bank: n0.bank + (n1.bank - n0.bank) * t,
+                    stage: t < 0.5 ? n0.stage : n1.stage,
+                    type: t < 0.5 ? n0.type : n1.type,
+                    dist: clamped
+                };
+            }
+
+            // ============================================================================
+            // 6. 3D CAMERA & PERSPECTIVE PROJECTION ENGINE
+            // ============================================================================
+            function updateCamera() {
+                if (state.camMode === 'ORBIT') {
+                    const radius = 25 / state.zoom;
+                    const cosP = Math.cos(state.pitch);
+                    const sinP = Math.sin(state.pitch);
+                    const cosY = Math.cos(state.yaw);
+                    const sinY = Math.sin(state.yaw);
+
+                    state.camPos = {
+                        x: state.target.x + radius * cosP * sinY,
+                        y: Math.max(0.6, state.target.y + radius * sinP),
+                        z: state.target.z + radius * cosP * cosY
+                    };
+
+                    state.camForward = Vec3.normalize(Vec3.sub(state.target, state.camPos));
+                    const worldUp = { x: 0, y: 1, z: 0 };
+                    state.camRight = Vec3.normalize(Vec3.cross(state.camForward, worldUp));
+                    state.camUp = Vec3.normalize(Vec3.cross(state.camRight, state.camForward));
+                    state.fov = Math.min(W, H) * 0.92;
+                } else if (state.camMode === 'POV') {
+                    const lead = sampleTrackAtDistance(state.dist);
+                    // Place rider's eyes slightly above the front car
+                    state.camPos = Vec3.add(
+                        Vec3.add(lead.pos, Vec3.scale(lead.up, 0.58)),
+                        Vec3.scale(lead.forward, 0.25)
+                    );
+                    // Look slightly ahead along the track
+                    const lookAhead = sampleTrackAtDistance(Math.min(totalTrackLength, state.dist + 2.4));
+                    const aimDir = Vec3.normalize(Vec3.sub(Vec3.add(lookAhead.pos, Vec3.scale(lookAhead.up, 0.35)), state.camPos));
+                    state.camForward = Vec3.normalize(Vec3.lerp(lead.forward, aimDir, 0.45));
+                    state.camUp = lead.up;
+                    state.camRight = Vec3.normalize(Vec3.cross(state.camForward, state.camUp));
+                    state.camUp = Vec3.normalize(Vec3.cross(state.camRight, state.camForward));
+                    state.fov = Math.min(W, H) * 0.78;
+                } else if (state.camMode === 'CHASE') {
+                    const lead = sampleTrackAtDistance(state.dist);
+                    const behind = sampleTrackAtDistance(Math.max(0, state.dist - 3.6));
+                    const desiredPos = Vec3.add(
+                        Vec3.add(behind.pos, Vec3.scale(behind.up, 1.55)),
+                        Vec3.scale(behind.right, 1.1)
+                    );
+                    desiredPos.y = Math.max(0.8, desiredPos.y);
+                    state.camPos = Vec3.lerp(state.camPos, desiredPos, 0.14);
+
+                    const lookTarget = Vec3.add(lead.pos, Vec3.scale(lead.forward, 1.2));
+                    state.camForward = Vec3.normalize(Vec3.sub(lookTarget, state.camPos));
+                    const worldUp = { x: 0, y: 1, z: 0 };
+                    state.camRight = Vec3.normalize(Vec3.cross(state.camForward, worldUp));
+                    state.camUp = Vec3.normalize(Vec3.cross(state.camRight, state.camForward));
+                    state.fov = Math.min(W, H) * 0.85;
+                }
+            }
+
+            function projectPoint(p) {
+                const rel = Vec3.sub(p, state.camPos);
+                const zCam = Vec3.dot(rel, state.camForward);
+                if (zCam <= 0.15) return null; // Behind near clipping plane
+
+                const xCam = Vec3.dot(rel, state.camRight);
+                const yCam = Vec3.dot(rel, state.camUp);
+                const scale = state.fov / zCam;
+
+                return {
+                    x: W * 0.5 + xCam * scale,
+                    y: H * 0.52 - yCam * scale,
+                    z: zCam,
+                    s: scale
+                };
+            }
+
+            // ============================================================================
+            // 7. DEPTH-SORTED 3D RENDER QUEUE (PAINTER'S ALGORITHM)
+            // ============================================================================
+            const renderList = [];
+
+            function queueLine(p1, p2, color, width = 2, dash = null) {
+                const q1 = projectPoint(p1);
+                const q2 = projectPoint(p2);
+                if (!q1 || !q2) return;
+                if ((q1.x < -200 && q2.x < -200) || (q1.x > W + 200 && q2.x > W + 200)) return;
+                if ((q1.y < -200 && q2.y < -200) || (q1.y > H + 200 && q2.y > H + 200)) return;
+
+                const avgDepth = (q1.z + q2.z) * 0.5;
+                const avgScale = (q1.s + q2.s) * 0.5;
+                const screenWidth = Math.max(0.7, width * (avgScale / 36));
+
+                renderList.push({
+                    kind: 'line',
+                    depth: avgDepth,
+                    q1,
+                    q2,
+                    color,
+                    width: screenWidth,
+                    dash
+                });
+            }
+
+            function queuePoly(pts, fill, stroke = null, strokeWidth = 1) {
+                const projected = [];
+                let sumZ = 0;
+                for (let i = 0; i < pts.length; i++) {
+                    const q = projectPoint(pts[i]);
+                    if (!q) return; // Clip polygon if any vertex is behind camera
+                    projected.push(q);
+                    sumZ += q.z;
+                }
+
+                renderList.push({
+                    kind: 'poly',
+                    depth: sumZ / projected.length,
+                    pts: projected,
+                    fill,
+                    stroke,
+                    strokeWidth
+                });
+            }
+
+            function queueCircle(center, radiusWorld, fill, stroke = null) {
+                const q = projectPoint(center);
+                if (!q) return;
+                const r = Math.max(1.2, radiusWorld * q.s);
+                renderList.push({
+                    kind: 'circle',
+                    depth: q.z,
+                    q,
+                    r,
+                    fill,
+                    stroke
+                });
+            }
+
+            function flushRenderQueue() {
+                // Sort back-to-front by camera depth
+                renderList.sort((a, b) => b.depth - a.depth);
+
+                for (let i = 0; i < renderList.length; i++) {
+                    const item = renderList[i];
+                    if (item.kind === 'line') {
+                        ctx.beginPath();
+                        if (item.dash) ctx.setLineDash(item.dash);
+                        ctx.moveTo(item.q1.x, item.q1.y);
+                        ctx.lineTo(item.q2.x, item.q2.y);
+                        ctx.strokeStyle = item.color;
+                        ctx.lineWidth = item.width;
+                        ctx.lineCap = 'round';
+                        ctx.stroke();
+                        if (item.dash) ctx.setLineDash([]);
+                    } else if (item.kind === 'poly') {
+                        ctx.beginPath();
+                        ctx.moveTo(item.pts[0].x, item.pts[0].y);
+                        for (let j = 1; j < item.pts.length; j++) {
+                            ctx.lineTo(item.pts[j].x, item.pts[j].y);
+                        }
+                        ctx.closePath();
+                        if (item.fill) {
+                            ctx.fillStyle = item.fill;
+                            ctx.fill();
+                        }
+                        if (item.stroke) {
+                            ctx.strokeStyle = item.stroke;
+                            ctx.lineWidth = item.strokeWidth;
+                            ctx.stroke();
+                        }
+                    } else if (item.kind === 'circle') {
+                        ctx.beginPath();
+                        ctx.arc(item.q.x, item.q.y, item.r, 0, Math.PI * 2);
+                        if (item.fill) {
+                            ctx.fillStyle = item.fill;
+                            ctx.fill();
+                        }
+                        if (item.stroke) {
+                            ctx.strokeStyle = item.stroke;
+                            ctx.lineWidth = 1.2;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                renderList.length = 0;
+            }
+
+            // ============================================================================
+            // 8. ENVIRONMENT, PARK ARCHITECTURE & ENGINEERING STRUCTURES
+            // ============================================================================
+            function drawSkyAndBackdrop() {
+                const grad = ctx.createLinearGradient(0, 0, 0, H);
+                if (state.nightMode) {
+                    grad.addColorStop(0, '#050a14');
+                    grad.addColorStop(0.52, '#0e1d33');
+                    grad.addColorStop(1, '#1a2d42');
                 } else {
-                    ctx.lineTo(q.x, q.y);
+                    grad.addColorStop(0, '#1d5fa3');
+                    grad.addColorStop(0.55, '#68a8de');
+                    grad.addColorStop(1, '#b8dcf5');
+                }
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, W, H);
+
+                // Subtle stars in night mode
+                if (state.nightMode) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+                    for (let i = 0; i < 65; i++) {
+                        const sx = ((i * 197 + state.yaw * 140) % W + W) % W;
+                        const sy = ((i * 89) % (H * 0.45));
+                        const sz = (i % 3 === 0) ? 1.8 : 1.1;
+                        ctx.fillRect(sx, sy, sz, sz);
+                    }
+                }
+            }
+
+            function buildTerrainAndPark() {
+                const groundFill = state.nightMode ? '#14272b' : '#2f5e47';
+                const groundStroke = state.nightMode ? '#2b474d' : '#4a7d60';
+                const gridColor = state.nightMode ? 'rgba(130, 175, 175, 0.12)' : 'rgba(255, 255, 255, 0.16)';
+
+                // Main park concrete/grass pad
+                queuePoly([
+                    { x: -16, y: 0, z: -7 },
+                    { x: 15, y: 0, z: -7 },
+                    { x: 15, y: 0, z: 9.5 },
+                    { x: -16, y: 0, z: 9.5 }
+                ], groundFill, groundStroke, 1.5);
+
+                // Engineering survey grid lines
+                for (let x = -14; x <= 14; x += 2) {
+                    queueLine({ x, y: 0.01, z: -7 }, { x, y: 0.01, z: 9.5 }, gridColor, 1);
+                }
+                for (let z = -6; z <= 8; z += 2) {
+                    queueLine({ x: -16, y: 0.01, z }, { x: 15, y: 0.01, z }, gridColor, 1);
+                }
+
+                // Ornamental retention pond under the Overbank Turn & Camelback
+                queuePoly([
+                    { x: 1.5, y: 0.02, z: 1.5 },
+                    { x: 8.5, y: 0.02, z: 1.5 },
+                    { x: 9.2, y: 0.02, z: 6.2 },
+                    { x: 2.0, y: 0.02, z: 6.5 }
+                ], state.nightMode ? '#0c3547' : '#247ba0', '#52b2cf', 1.5);
+
+                // Maintenance gravel walkways
+                queuePoly([
+                    { x: -14.5, y: 0.02, z: -4.2 },
+                    { x: 13.5, y: 0.02, z: -4.2 },
+                    { x: 13.5, y: 0.02, z: -3.4 },
+                    { x: -14.5, y: 0.02, z: -3.4 }
+                ], state.nightMode ? '#283645' : '#6c7a89', null);
+
+                // Safety perimeter fencing with posts and top rail
+                const fenceCol = state.nightMode ? '#7f95ab' : '#cbd6e2';
+                const xMin = -15.2, xMax = 14.2, zMin = -6.4, zMax = 8.8;
+                for (let x = xMin; x <= xMax; x += 1.8) {
+                    queueLine({ x, y: 0, z: zMin }, { x, y: 0.75, z: zMin }, fenceCol, 1.2);
+                    queueLine({ x, y: 0, z: zMax }, { x, y: 0.75, z: zMax }, fenceCol, 1.2);
+                }
+                for (let z = zMin; z <= zMax; z += 1.8) {
+                    queueLine({ x: xMin, y: 0, z }, { x: xMin, y: 0.75, z }, fenceCol, 1.2);
+                    queueLine({ x: xMax, y: 0, z }, { x: xMax, y: 0.75, z }, fenceCol, 1.2);
+                }
+                queueLine({ x: xMin, y: 0.75, z: zMin }, { x: xMax, y: 0.75, z: zMin }, fenceCol, 1.5);
+                queueLine({ x: xMin, y: 0.75, z: zMax }, { x: xMax, y: 0.75, z: zMax }, fenceCol, 1.5);
+                queueLine({ x: xMin, y: 0.75, z: zMin }, { x: xMin, y: 0.75, z: zMax }, fenceCol, 1.5);
+                queueLine({ x: xMax, y: 0.75, z: zMin }, { x: xMax, y: 0.75, z: zMax }, fenceCol, 1.5);
+
+                // 3D Conical Pine Trees around the park
+                const treeLocations = [
+                    [-14.2, -5.4], [-10.5, -5.5], [-4.5, -5.6], [3.5, -5.5], [11.5, -5.3],
+                    [-14.2, 7.6], [-8.0, 7.8], [-1.5, 7.9], [10.8, 7.5], [13.2, 3.0]
+                ];
+                for (const [tx, tz] of treeLocations) {
+                    // Trunk
+                    queueLine({ x: tx, y: 0, z: tz }, { x: tx, y: 1.1, z: tz }, '#6e472b', 4);
+                    // 3-tier 3D crossed foliage pyramids
+                    for (let tier = 0; tier < 3; tier++) {
+                        const yBase = 0.75 + tier * 0.5;
+                        const yTop = 2.0 + tier * 0.45;
+                        const r = 0.72 - tier * 0.15;
+                        const colA = state.nightMode ? '#225438' : '#2d7a47';
+                        const colB = state.nightMode ? '#2d6a47' : '#3a9458';
+                        queuePoly([
+                            { x: tx - r, y: yBase, z: tz },
+                            { x: tx + r, y: yBase, z: tz },
+                            { x: tx, y: yTop, z: tz }
+                        ], colA, '#183d28', 0.8);
+                        queuePoly([
+                            { x: tx, y: yBase, z: tz - r },
+                            { x: tx, y: yBase, z: tz + r },
+                            { x: tx, y: yTop, z: tz }
+                        ], colB, '#183d28', 0.8);
+                    }
+                }
+
+                // Floodlight poles around the coaster
+                const lightPosts = [
+                    [-13.5, -4.8], [-5.5, -4.8], [3.5, -4.8],
+                    [-12.5, 7.2], [0.5, 7.2], [11.5, 6.5]
+                ];
+                for (const [lx, lz] of lightPosts) {
+                    queueLine({ x: lx, y: 0, z: lz }, { x: lx, y: 3.2, z: lz }, '#c5d4e3', 2);
+                    queueLine({ x: lx - 0.35, y: 3.2, z: lz }, { x: lx + 0.35, y: 3.2, z: lz }, '#c5d4e3', 2.2);
+                    if (state.nightMode) {
+                        queueCircle({ x: lx - 0.25, y: 3.18, z: lz }, 0.14, '#ffe999');
+                        queueCircle({ x: lx + 0.25, y: 3.18, z: lz }, 0.14, '#ffe999');
+                    }
+                }
+            }
+
+            function buildStationAndFinishArch() {
+                // --- BOARDING STATION (at start of track: x = -13.8 to -10.5, z = -2.2) ---
+                const sx0 = -13.9, sx1 = -10.4, sz0 = -3.3, sz1 = -1.1;
+                // Platform deck
+                queuePoly([
+                    { x: sx0, y: 0.85, z: sz0 },
+                    { x: sx1, y: 0.85, z: sz0 },
+                    { x: sx1, y: 0.85, z: sz1 },
+                    { x: sx0, y: 0.85, z: sz1 }
+                ], '#3c5269', '#8fa8c2', 1.2);
+
+                // Station support legs
+                for (const x of [sx0 + 0.2, (sx0 + sx1) * 0.5, sx1 - 0.2]) {
+                    for (const z of [sz0 + 0.15, sz1 - 0.15]) {
+                        queueLine({ x, y: 0, z }, { x, y: 2.35, z }, '#d5e2ef', 2.2);
+                    }
+                }
+
+                // Pitched Station Canopy Roof
+                const midZ = (sz0 + sz1) * 0.5;
+                queuePoly([
+                    { x: sx0 - 0.15, y: 2.35, z: sz0 - 0.15 },
+                    { x: sx1 + 0.15, y: 2.35, z: sz0 - 0.15 },
+                    { x: sx1 + 0.15, y: 2.85, z: midZ },
+                    { x: sx0 - 0.15, y: 2.85, z: midZ }
+                ], '#264363', '#7ea4cc', 1.2);
+
+                queuePoly([
+                    { x: sx0 - 0.15, y: 2.85, z: midZ },
+                    { x: sx1 + 0.15, y: 2.85, z: midZ },
+                    { x: sx1 + 0.15, y: 2.35, z: sz1 + 0.15 },
+                    { x: sx0 - 0.15, y: 2.35, z: sz1 + 0.15 }
+                ], '#1e354f', '#7ea4cc', 1.2);
+
+                // --- SIGNATURE 3. FINISH LINE GANTRY (at x = 9.6, z = 0.2) ---
+                const fx = 9.6;
+                const fz0 = -0.65;
+                const fz1 = 1.05;
+                queueLine({ x: fx, y: 0, z: fz0 }, { x: fx, y: 2.85, z: fz0 }, '#ffffff', 3.5);
+                queueLine({ x: fx, y: 0, z: fz1 }, { x: fx, y: 2.85, z: fz1 }, '#ffffff', 3.5);
+                queueLine({ x: fx, y: 2.8, z: fz0 }, { x: fx, y: 2.8, z: fz1 }, '#ffffff', 3.5);
+
+                // Checkered Finish Banner
+                const cols = 8;
+                const rows = 2;
+                const dz = (fz1 - fz0 - 0.2) / cols;
+                const dy = 0.22;
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const zA = fz0 + 0.1 + c * dz;
+                        const zB = zA + dz;
+                        const yTop = 2.75 - r * dy;
+                        const yBot = yTop - dy;
+                        const isWhite = (r + c) % 2 === 0;
+                        queuePoly([
+                            { x: fx, y: yTop, z: zA },
+                            { x: fx, y: yTop, z: zB },
+                            { x: fx, y: yBot, z: zB },
+                            { x: fx, y: yBot, z: zA }
+                        ], isWhite ? '#ffffff' : '#111926', null);
+                    }
+                }
+            }
+
+            function buildTrackAndSupports() {
+                const railGauge = 0.22;      // Half-width between tubular running rails
+                const spineOffset = 0.26;    // Depth of triangular box-truss spine below rails
+                const colSteel = state.nightMode ? '#d8e4f0' : '#f2f7fc';
+                const colBrace = state.nightMode ? '#7f99b3' : '#9fb5cc';
+                const colFooting = '#5e7387';
+
+                // 1. Structural Steel Support Columns (A-Frames, Vertical Bents, and Loop Towers)
+                for (let i = 4; i < trackNodes.length - 3; i += 9) {
+                    const node = trackNodes[i];
+                    const p = node.pos;
+
+                    // Skip underside of inverted loop/corkscrew top where track hangs upside-down
+                    if (node.up.y < 0.15) continue;
+                    if (p.y < 0.6) continue;
+
+                    const anchor = Vec3.sub(p, Vec3.scale(node.up, spineOffset));
+
+                    if (p.y > 4.2 && node.type !== 'loop') {
+                        // Heavy A-Frame Bents with X-bracing for tall sections
+                        const spread = Math.min(1.3, 0.35 + p.y * 0.08);
+                        const perp = Vec3.normalize({ x: -node.forward.z, y: 0, z: node.forward.x });
+                        const footL = Vec3.add({ x: anchor.x, y: 0, z: anchor.z }, Vec3.scale(perp, spread));
+                        const footR = Vec3.sub({ x: anchor.x, y: 0, z: anchor.z }, Vec3.scale(perp, spread));
+
+                        queueLine(anchor, footL, colSteel, 2.6);
+                        queueLine(anchor, footR, colSteel, 2.6);
+
+                        // Horizontal ledger & diagonal cross-bracing tiers
+                        const tiers = Math.floor(p.y / 2.6);
+                        for (let t = 1; t <= tiers; t++) {
+                            const f1 = (t - 0.5) / (tiers + 0.5);
+                            const f2 = t / (tiers + 0.5);
+                            const l1 = Vec3.lerp(footL, anchor, f1);
+                            const r1 = Vec3.lerp(footR, anchor, f1);
+                            const l2 = Vec3.lerp(footL, anchor, f2);
+                            const r2 = Vec3.lerp(footR, anchor, f2);
+                            queueLine(l2, r2, colBrace, 1.4);
+                            queueLine(l1, r2, colBrace, 1.1);
+                            queueLine(r1, l2, colBrace, 1.1);
+                        }
+
+                        // Concrete footings
+                        for (const f of [footL, footR]) {
+                            queuePoly([
+                                { x: f.x - 0.25, y: 0.02, z: f.z - 0.25 },
+                                { x: f.x + 0.25, y: 0.02, z: f.z - 0.25 },
+                                { x: f.x + 0.25, y: 0.02, z: f.z + 0.25 },
+                                { x: f.x - 0.25, y: 0.02, z: f.z + 0.25 }
+                            ], colFooting, '#a9bccf', 0.8);
+                        }
+                    } else {
+                        // Single vertical tubular column + footing for lower sections
+                        const foot = { x: anchor.x, y: 0, z: anchor.z };
+                        queueLine(anchor, foot, colSteel, 2.4);
+                        queuePoly([
+                            { x: foot.x - 0.22, y: 0.02, z: foot.z - 0.22 },
+                            { x: foot.x + 0.22, y: 0.02, z: foot.z - 0.22 },
+                            { x: foot.x + 0.22, y: 0.02, z: foot.z + 0.22 },
+                            { x: foot.x - 0.22, y: 0.02, z: foot.z + 0.22 }
+                        ], colFooting, '#a9bccf', 0.8);
+                    }
+                }
+
+                // Dedicated Heavy Teardrop Loop Truss Towers (flanking the vertical loop)
+                const loopTowerCoords = [
+                    { x: -1.1, y: 5.2, z: -2.65 },
+                    { x: -1.1, y: 5.2, z: -1.0 }
+                ];
+                for (const lt of loopTowerCoords) {
+                    queueLine({ x: lt.x - 0.55, y: 0, z: lt.z }, { x: lt.x - 0.35, y: lt.y, z: lt.z }, colSteel, 2.8);
+                    queueLine({ x: lt.x + 0.55, y: 0, z: lt.z }, { x: lt.x + 0.35, y: lt.y, z: lt.z }, colSteel, 2.8);
+                    for (let h = 1; h <= 4; h++) {
+                        const y0 = (h - 1) * 1.25;
+                        const y1 = h * 1.25;
+                        queueLine({ x: lt.x - 0.5, y: y1, z: lt.z }, { x: lt.x + 0.5, y: y1, z: lt.z }, colBrace, 1.4);
+                        queueLine({ x: lt.x - 0.5, y: y0, z: lt.z }, { x: lt.x + 0.5, y: y1, z: lt.z }, colBrace, 1.1);
+                        queueLine({ x: lt.x + 0.5, y: y0, z: lt.z }, { x: lt.x - 0.5, y: y1, z: lt.z }, colBrace, 1.1);
+                    }
+                }
+
+                // 2. Box-Girder Spine, Twin Tubular Running Rails, Cross-Ties, Chain Lift & Brakes
+                for (let i = 0; i < trackNodes.length - 1; i++) {
+                    const a = trackNodes[i];
+                    const b = trackNodes[i + 1];
+
+                    const aLeft = Vec3.sub(a.pos, Vec3.scale(a.right, railGauge));
+                    const aRight = Vec3.add(a.pos, Vec3.scale(a.right, railGauge));
+                    const aSpine = Vec3.sub(a.pos, Vec3.scale(a.up, spineOffset));
+
+                    const bLeft = Vec3.sub(b.pos, Vec3.scale(b.right, railGauge));
+                    const bRight = Vec3.add(b.pos, Vec3.scale(b.right, railGauge));
+                    const bSpine = Vec3.sub(b.pos, Vec3.scale(b.up, spineOffset));
+
+                    // Color-code special track zones subtly while maintaining cohesive coaster branding
+                    let spineColor = '#ff9838'; // Signature ThunderLoop Orange Spine
+                    let railColor = '#4deeea';  // Cyan Tubular Rails
+                    if (a.type === 'lift') {
+                        spineColor = '#ffaa3b';
+                    } else if (a.type === 'brakes') {
+                        spineColor = '#ff5268';
+                    }
+
+                    // Main bottom box-girder spine
+                    queueLine(aSpine, bSpine, spineColor, 4.2);
+
+                    // Left & Right tubular running rails
+                    queueLine(aLeft, bLeft, railColor, 2.2);
+                    queueLine(aRight, bRight, railColor, 2.2);
+
+                    // Triangular Truss Cross-Ties (every 2nd node for crisp engineering detail)
+                    if (i % 2 === 0) {
+                        queueLine(aLeft, aRight, '#e8f1fa', 1.3);
+                        queueLine(aLeft, aSpine, '#ffb76b', 1.1);
+                        queueLine(aRight, aSpine, '#ffb76b', 1.1);
+                    }
+
+                    // Chain lift central trough & anti-rollback teeth on the Giant First Hill
+                    if (a.type === 'lift') {
+                        queueLine(a.pos, b.pos, '#ffd369', 2.0, [3, 3]);
+                    }
+
+                    // Magnetic brake fins on the final brake run
+                    if (a.type === 'brakes' && i % 2 === 0) {
+                        const finTop = Vec3.add(a.pos, Vec3.scale(a.up, 0.08));
+                        const finBot = Vec3.sub(a.pos, Vec3.scale(a.up, 0.14));
+                        queueLine(finTop, finBot, '#ffd369', 2.4);
+                    }
+
+                    // Lift hill maintenance catwalk & handrail on the right side
+                    if (a.type === 'lift' || a.type === 'station') {
+                        const cwInA = Vec3.add(aRight, Vec3.scale(a.right, 0.08));
+                        const cwOutA = Vec3.add(aRight, Vec3.scale(a.right, 0.48));
+                        const cwInB = Vec3.add(bRight, Vec3.scale(b.right, 0.08));
+                        const cwOutB = Vec3.add(bRight, Vec3.scale(b.right, 0.48));
+                        queueLine(cwOutA, cwOutB, '#9fb5cc', 1.5);
+                        if (i % 3 === 0) {
+                            queueLine(cwInA, cwOutA, '#7d95ad', 1.1);
+                            const railPostTop = Vec3.add(cwOutA, Vec3.scale(a.up, 0.45));
+                            queueLine(cwOutA, railPostTop, '#ffd369', 1.1);
+                        }
+                        const handRailA = Vec3.add(cwOutA, Vec3.scale(a.up, 0.45));
+                        const handRailB = Vec3.add(cwOutB, Vec3.scale(b.up, 0.45));
+                        queueLine(handRailA, handRailB, '#ffd369', 1.3);
+                    }
+                }
+            }
+
+            // ============================================================================
+            // 9. 4-CAR ARTICULATED ROLLER COASTER TRAIN & PHYSICS VECTORS
+            // ============================================================================
+            function buildCoasterTrain() {
+                const carCount = 4;
+                const carSpacing = 0.62;
+                const carColors = ['#ff4760', '#ff6347', '#ff7b38', '#ff9429'];
+
+                for (let c = 0; c < carCount; c++) {
+                    const carDist = state.dist - c * carSpacing;
+                    if (carDist < 0) continue;
+
+                    const frame = sampleTrackAtDistance(carDist);
+                    const { pos, forward, up, right } = frame;
+
+                    // Skip rendering lead car in first-person POV so it doesn't block camera view
+                    if (state.camMode === 'POV' && c === 0) continue;
+
+                    const halfLen = 0.25;
+                    const halfWid = 0.22;
+                    const hBot = 0.04;
+                    const hTop = 0.26;
+
+                    // Compute 8 corners of the 3D coaster chassis in local Frenet-banked space
+                    const corner = (fSign, rSign, uHeight) =>
+                        Vec3.add(
+                            Vec3.add(
+                                Vec3.add(pos, Vec3.scale(forward, fSign * halfLen)),
+                                Vec3.scale(right, rSign * halfWid)
+                            ),
+                            Vec3.scale(up, uHeight)
+                        );
+
+                    const bFL = corner(1, -1, hBot);
+                    const bFR = corner(1, 1, hBot);
+                    const bRL = corner(-1, -1, hBot);
+                    const bRR = corner(-1, 1, hBot);
+
+                    const tFL = corner(0.85, -0.88, hTop);
+                    const tFR = corner(0.85, 0.88, hTop);
+                    const tRL = corner(-0.92, -0.92, hTop + 0.05);
+                    const tRR = corner(-0.92, 0.92, hTop + 0.05);
+
+                    const bodyColor = carColors[c];
+                    const darkTrim = '#182436';
+
+                    // Bottom chassis, sides, front nose, rear bulkhead, and seat interior
+                    queuePoly([bFL, bFR, bRR, bRL], darkTrim, '#ffffff', 0.8);
+                    queuePoly([bFL, bFR, tFR, tFL], bodyColor, '#ffffff', 0.9); // Front nose
+                    queuePoly([bRL, bRR, tRR, tRL], bodyColor, '#ffffff', 0.9); // Rear headrest
+                    queuePoly([bFL, bRL, tRL, tFL], bodyColor, '#ffffff', 0.9); // Left side
+                    queuePoly([bFR, bRR, tRR, tFR], bodyColor, '#ffffff', 0.9); // Right side
+
+                    // Rider silhouettes (helmets/shoulders) inside each car
+                    const riderL = Vec3.add(Vec3.add(pos, Vec3.scale(right, -0.09)), Vec3.scale(up, 0.34));
+                    const riderR = Vec3.add(Vec3.add(pos, Vec3.scale(right, 0.09)), Vec3.scale(up, 0.34));
+                    queueCircle(riderL, 0.075, '#ffd369', '#111926');
+                    queueCircle(riderR, 0.075, '#4deeea', '#111926');
+
+                    // Road wheels clamping onto the tubular rails
+                    for (const fSign of [-0.65, 0.65]) {
+                        for (const rSign of [-1, 1]) {
+                            const wheelPos = Vec3.add(
+                                Vec3.add(pos, Vec3.scale(forward, fSign * halfLen)),
+                                Vec3.scale(right, rSign * 0.22)
+                            );
+                            queueCircle(wheelPos, 0.055, '#111926', '#cbd6e2');
+                        }
+                    }
+
+                    // Lead car twin LED headlights
+                    if (c === 0) {
+                        const hlL = corner(0.96, -0.11, 0.14);
+                        const hlR = corner(0.96, 0.11, 0.14);
+                        queueCircle(hlL, 0.045, '#ffffff', '#4deeea');
+                        queueCircle(hlR, 0.045, '#ffffff', '#4deeea');
+                    }
+                }
+
+                // Optional Physics Vector Overlay (Velocity & G-Force Normal Vectors)
+                if (state.showVectors) {
+                    const lead = sampleTrackAtDistance(state.dist);
+                    const origin = Vec3.add(lead.pos, Vec3.scale(lead.up, 0.35));
+
+                    // Velocity Vector (Cyan)
+                    const velEnd = Vec3.add(origin, Vec3.scale(lead.forward, 0.5 + state.velocity * 0.14));
+                    queueLine(origin, velEnd, '#4deeea', 3.2);
+
+                    // Centripetal / Normal G-Force Vector (Gold)
+                    const gLen = Math.max(0.3, Math.min(2.6, Math.abs(state.gForce) * 0.45));
+                    const gDir = state.gForce >= 0 ? lead.up : Vec3.scale(lead.up, -1);
+                    const gEnd = Vec3.add(origin, Vec3.scale(gDir, gLen));
+                    queueLine(origin, gEnd, '#ffd369', 3.2);
+
+                    // Gravity Vector (Red, always straight down)
+                    const gravEnd = Vec3.add(origin, { x: 0, y: -1.1, z: 0 });
+                    queueLine(origin, gravEnd, '#ff5268', 2.6);
+                }
+            }
+
+            // ============================================================================
+            // 10. 3D FLOATING ENGINEERING CALLOUT LABELS
+            // ============================================================================
+            function drawEngineeringLabels() {
+                if (!state.showLabels || state.camMode === 'POV') return;
+
+                const callouts = [
+                    { pos: { x: -12.1, y: 3.3, z: -2.2 }, title: 'BOARDING STATION', sub: 'Pneumatic Dispatch', color: '#8deaff' },
+                    { pos: { x: -5.4, y: 11.9, z: -2.2 }, title: '1. GIANT FIRST HILL + DROP', sub: '111 ft Peak · Max Potential Energy', color: '#ffd369' },
+                    { pos: { x: -1.1, y: 8.1, z: -1.8 }, title: '2. TEARDROP VERTICAL LOOP', sub: '74 ft Clothoid Inversion · 3.8 G', color: '#4deeea' },
+                    { pos: { x: 8.2, y: 7.7, z: 1.6 }, title: '82° OVERBANK TURN', sub: 'High-Speed Lateral Banking', color: '#ff9e3b' },
+                    { pos: { x: 2.0, y: 6.4, z: 5.8 }, title: 'ZERO-G CAMELBACK', sub: '0.0 G Parabolic Airtime Crest', color: '#9bffb0' },
+                    { pos: { x: -5.4, y: 6.0, z: 3.4 }, title: '360° CORKSCREW ROLL', sub: 'Helical Barrel Inversion', color: '#ff8da1' },
+                    { pos: { x: -10.8, y: 3.4, z: 5.4 }, title: 'LOW-GROUND HELIX', sub: 'Sustained Centripetal Force', color: '#a5c8ff' },
+                    { pos: { x: 9.6, y: 3.5, z: 0.2 }, title: '3. FINISH LINE & BRAKES', sub: 'Eddy-Current Magnetic Deceleration', color: '#ffffff' }
+                ];
+
+                ctx.textAlign = 'center';
+                for (const item of callouts) {
+                    const q = projectPoint(item.pos);
+                    if (!q || q.z > 42) continue;
+
+                    const alpha = Math.max(0.25, Math.min(1, 1.35 - q.z / 38));
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+
+                    // Connector stem dot
+                    ctx.beginPath();
+                    ctx.arc(q.x, q.y + 10, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = item.color;
+                    ctx.fill();
+
+                    // Pill background
+                    ctx.font = 'bold 11px Segoe UI, Arial, sans-serif';
+                    const w1 = ctx.measureText(item.title).width;
+                    ctx.font = '10px Segoe UI, Arial, sans-serif';
+                    const w2 = ctx.measureText(item.sub).width;
+                    const boxW = Math.max(w1, w2) + 18;
+                    const boxH = 31;
+
+                    ctx.fillStyle = 'rgba(8, 17, 30, 0.84)';
+                    ctx.strokeStyle = item.color;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.roundRect(q.x - boxW * 0.5, q.y - boxH + 4, boxW, boxH, 6);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.font = 'bold 11px Segoe UI, Arial, sans-serif';
+                    ctx.fillStyle = item.color;
+                    ctx.fillText(item.title, q.x, q.y - 14);
+
+                    ctx.font = '10px Segoe UI, Arial, sans-serif';
+                    ctx.fillStyle = '#d3e2f2';
+                    ctx.fillText(item.sub, q.x, q.y - 2);
+
+                    ctx.restore();
+                }
+            }
+
+            // ============================================================================
+            // 11. REAL-TIME CONSERVATION OF ENERGY PHYSICS ENGINE & HUD UPDATER
+            // ============================================================================
+            const uiRefs = {
+                speed: document.getElementById('valSpeed'),
+                height: document.getElementById('valHeight'),
+                gForce: document.getElementById('valG'),
+                bank: document.getElementById('valBank'),
+                pctPE: document.getElementById('pctPE'),
+                pctKE: document.getElementById('pctKE'),
+                barPE: document.getElementById('barPE'),
+                barKE: document.getElementById('barKE'),
+                status: document.getElementById('statusBadge'),
+                stages: Array.from(document.querySelectorAll('#stageList li'))
+            };
+
+            function updatePhysics(dt) {
+                const current = sampleTrackAtDistance(state.dist);
+                const prevSample = sampleTrackAtDistance(Math.max(0, state.dist - 0.25));
+                const nextSample = sampleTrackAtDistance(Math.min(totalTrackLength, state.dist + 0.25));
+
+                // Gravity acceleration along track tangent: a = -g * sin(theta)
+                const gAccel = 21.5; // Scaled gravity constant for realistic ride pacing
+                const sinSlope = current.forward.y;
+                const friction = 0.014 * state.velocity;
+
+                if (state.riding) {
+                    const subSteps = 4;
+                    const subDt = (dt * state.speedMultiplier) / subSteps;
+
+                    for (let s = 0; s < subSteps; s++) {
+                        const node = sampleTrackAtDistance(state.dist);
+
+                        if (node.type === 'station') {
+                            // Smooth dispatch launch out of station
+                            state.velocity += (4.4 - state.velocity) * 4.0 * subDt;
+                        } else if (node.type === 'lift') {
+                            // Constant-speed chain lift up the 111 ft Giant First Hill
+                            const liftSpeed = 4.6;
+                            state.velocity += (liftSpeed - state.velocity) * 6.0 * subDt;
+                        } else if (node.type === 'brakes') {
+                            // Magnetic eddy-current brake run
+                            const targetBrakeSpeed = 3.2;
+                            state.velocity += (targetBrakeSpeed - state.velocity) * 3.5 * subDt;
+                        } else if (node.type === 'finish') {
+                            // Final deceleration to a complete stop at the Finish Line
+                            state.velocity = Math.max(0, state.velocity - 5.5 * subDt);
+                        } else {
+                            // Pure gravity-driven roller coaster physics (PE <-> KE conversion)
+                            const accel = -gAccel * node.forward.y - friction;
+                            state.velocity = Math.max(2.4, state.velocity + accel * subDt);
+                        }
+
+                        state.dist += state.velocity * subDt;
+
+                        // End of track reached -> park cleanly at Finish Line
+                        if (state.dist >= totalTrackLength - 0.4) {
+                            state.dist = totalTrackLength - 0.4;
+                            state.velocity = 0;
+                            state.riding = false;
+                            document.getElementById('btnRide').textContent = '↺ RE-LAUNCH RIDE';
+                            uiRefs.status.textContent = 'FINISHED';
+                            uiRefs.status.style.color = '#ffd369';
+                            break;
+                        }
+                    }
+                }
+
+                // Compute Vertical G-Force from track normal curvature: G = cos(pitch)*cos(bank) + v^2 / (R * g)
+                const dFwd = Vec3.sub(nextSample.forward, prevSample.forward);
+                const ds = Math.max(0.1, nextSample.dist - prevSample.dist);
+                const curvatureVec = Vec3.scale(dFwd, 1 / ds);
+                const normalAccel = Vec3.dot(curvatureVec, current.up) * (state.velocity * state.velocity);
+                const gravityComponent = current.up.y;
+                const rawG = gravityComponent + normalAccel / gAccel;
+                state.gForce += (Math.max(-1.2, Math.min(4.8, rawG)) - state.gForce) * 0.22;
+
+                // Update active stage highlight in UI
+                if (state.currentStage !== current.stage) {
+                    state.currentStage = current.stage;
+                    uiRefs.stages.forEach((li, idx) => {
+                        li.classList.toggle('active', idx === current.stage);
+                    });
+                }
+
+                // Update Telemetry Readouts
+                const mph = state.velocity * 4.45;
+                const feet = Math.round(current.pos.y * 10);
+                const bankDeg = Math.round((current.bank * 180) / Math.PI);
+
+                uiRefs.speed.textContent = mph.toFixed(1);
+                uiRefs.height.textContent = feet;
+                uiRefs.gForce.textContent = state.gForce.toFixed(1);
+                uiRefs.bank.textContent = bankDeg;
+
+                // Energy Conservation Bars (Max reference height = 11.1 units)
+                const maxH = 11.1;
+                const peNorm = Math.max(0, Math.min(100, Math.round((current.pos.y / maxH) * 100)));
+                const keNorm = Math.max(0, Math.min(100, Math.round(((state.velocity * state.velocity) / (2 * gAccel * maxH)) * 100)));
+
+                uiRefs.pctPE.textContent = peNorm + '%';
+                uiRefs.pctKE.textContent = keNorm + '%';
+                uiRefs.barPE.style.width = peNorm + '%';
+                uiRefs.barKE.style.width = keNorm + '%';
+
+                SoundEngine.update(dt, state.velocity, current.stage, state.riding);
+            }
+
+            // ============================================================================
+            // 12. MAIN ANIMATION LOOP
+            // ============================================================================
+            let lastFrameTime = performance.now();
+
+            function frameLoop(now) {
+                const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+                lastFrameTime = now;
+                state.time += dt;
+
+                updatePhysics(dt);
+                updateCamera();
+
+                drawSkyAndBackdrop();
+                buildTerrainAndPark();
+                buildStationAndFinishArch();
+                buildTrackAndSupports();
+                buildCoasterTrain();
+                flushRenderQueue();
+                drawEngineeringLabels();
+
+                requestAnimationFrame(frameLoop);
+            }
+
+            requestAnimationFrame(frameLoop);
+
+            // ============================================================================
+            // 13. USER INPUT & INTERACTIVE CONTROLS
+            // ============================================================================
+            let isDragging = false;
+            let pointerStartX = 0;
+            let pointerStartY = 0;
+
+            canvas.addEventListener('pointerdown', (e) => {
+                isDragging = true;
+                pointerStartX = e.clientX;
+                pointerStartY = e.clientY;
+                canvas.setPointerCapture(e.pointerId);
+            });
+
+            canvas.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - pointerStartX;
+                const dy = e.clientY - pointerStartY;
+                pointerStartX = e.clientX;
+                pointerStartY = e.clientY;
+
+                if (state.camMode === 'ORBIT') {
+                    state.yaw -= dx * 0.0065;
+                    state.pitch = Math.max(0.04, Math.min(1.38, state.pitch + dy * 0.0055));
                 }
             });
 
-            ctx.strokeStyle = color;
-            ctx.lineWidth = width;
-            ctx.lineJoin = "round";
-            ctx.lineCap = "round";
-            ctx.stroke();
-        }
+            canvas.addEventListener('pointerup', () => { isDragging = false; });
+            canvas.addEventListener('pointercancel', () => { isDragging = false; });
 
-        function polygon(points, fill, stroke = "#53677b") {
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (state.camMode === 'ORBIT') {
+                    const factor = e.deltaY > 0 ? 0.92 : 1.09;
+                    state.zoom = Math.max(0.55, Math.min(2.3, state.zoom * factor));
+                }
+            }, { passive: false });
 
-            let q = points.map(project);
-
-            ctx.beginPath();
-
-            q.forEach((p, i) => {
-                if (i === 0) ctx.moveTo(p.x, p.y);
-                else ctx.lineTo(p.x, p.y);
+            // Button Bindings
+            const btnRide = document.getElementById('btnRide');
+            btnRide.addEventListener('click', () => {
+                SoundEngine.init();
+                if (state.dist >= totalTrackLength - 1.0) {
+                    state.dist = 2.2;
+                    state.velocity = 0;
+                }
+                state.riding = !state.riding;
+                btnRide.textContent = state.riding ? '⏸ PAUSE RIDE' : '▶ RESUME RIDE';
+                uiRefs.status.textContent = state.riding ? 'RUNNING' : 'PAUSED';
+                uiRefs.status.style.color = state.riding ? '#4deeea' : '#ffd369';
             });
 
-            ctx.closePath();
-
-            ctx.fillStyle = fill;
-            ctx.fill();
-
-            ctx.strokeStyle = stroke;
-            ctx.stroke();
-        }
-
-        function label(p, text, color = "white", size = 12) {
-
-            let q = project(p);
-
-            ctx.font = `bold ${size}px Arial`;
-            ctx.textAlign = "center";
-
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = "#07111d";
-
-            ctx.strokeText(text, q.x, q.y);
-
-            ctx.fillStyle = color;
-            ctx.fillText(text, q.x, q.y);
-        }
-
-
-        // ===================================
-        // TRACK CREATION
-        // ===================================
-
-        const track = [];
-
-        function bezier(out, a, b, c, d, n) {
-
-            for (let i = 0; i <= n; i++) {
-
-                let u = i / n;
-                let v = 1 - u;
-
-                let x =
-                    v * v * v * a.x +
-                    3 * v * v * u * b.x +
-                    3 * v * u * u * c.x +
-                    u * u * u * d.x;
-
-                let y =
-                    v * v * v * a.y +
-                    3 * v * v * u * b.y +
-                    3 * v * u * u * c.y +
-                    u * u * u * d.y;
-
-                out.push(P(x, y, 0));
-            }
-        }
-
-
-        // 1. BIGGEST FIRST HILL
-
-        bezier(
-            track,
-            P(-10, 1),
-            P(-8.8, 1.1),
-            P(-8.4, 10.2),
-            P(-5.6, 10.2),
-            42
-        );
-
-
-        // 1B. STEEP FIRST DROP
-
-        bezier(
-            track,
-            P(-5.6, 10.2),
-            P(-3.8, 10.2),
-            P(-3.5, 2),
-            P(-1.2, 1.25),
-            40
-        );
-
-
-        // 2. TEARDROP-SHAPED VERTICAL LOOP
-
-        const loopCenter = -1.2;
-        const loopBase = 1.25;
-
-        for (let i = 1; i <= 120; i++) {
-
-            let a = (i / 120) * Math.PI * 2;
-
-            let x =
-                loopCenter +
-                1.65 * Math.sin(a) *
-                (0.76 + 0.24 * Math.cos(a));
-
-            let y =
-                loopBase +
-                5.25 * (1 - Math.cos(a)) / 2;
-
-            track.push(P(x, y, 0));
-        }
-
-
-        // 3. EXIT TRACK AND FINISH
-
-        bezier(
-            track,
-            P(-1.2, 1.25),
-            P(0.1, 1.2),
-            P(2.7, 0.95),
-            P(4.0, 0.95),
-            24
-        );
-
-        bezier(
-            track,
-            P(4.0, 0.95),
-            P(5.5, 0.9),
-            P(7.2, 1),
-            P(8.4, 1),
-            25
-        );
-
-
-        // ===================================
-        // GROUND AND LANDSCAPING
-        // ===================================
-
-        function terrain() {
-
-            polygon([
-                P(-13, -0.03, -7),
-                P(12, -0.03, -7),
-                P(12, -0.03, 7),
-                P(-13, -0.03, 7)
-            ], "#203a3c", "#49615e");
-
-            // Ground grid
-
-            for (let x = -12; x <= 11; x += 2) {
-                line([
-                    P(x, 0, -7),
-                    P(x, 0, 7)
-                ], "#8ca69b33", 1);
-            }
-
-            for (let z = -6; z <= 6; z += 2) {
-                line([
-                    P(-13, 0, z),
-                    P(12, 0, z)
-                ], "#8ca69b33", 1);
-            }
-
-            // Decorative grass patches
-
-            for (let i = 0; i < 12; i++) {
-
-                let x = -11 + i * 2;
-                let z = i % 2 ? 4.2 : -4.2;
-
-                polygon([
-                    P(x - 0.6, 0.04, z - 0.5),
-                    P(x + 0.6, 0.04, z - 0.5),
-                    P(x + 0.6, 0.04, z + 0.5),
-                    P(x - 0.6, 0.04, z + 0.5)
-                ], "#315c40", "#527b50");
-            }
-        }
-
-
-        // ===================================
-        // TREES
-        // ===================================
-
-        function tree(x, z) {
-
-            line([
-                P(x, 0.1, z),
-                P(x, 1.1, z)
-            ], "#926344", 5);
-
-            // Layered green foliage
-
-            for (let i = 0; i < 3; i++) {
-
-                polygon([
-                    P(x - 0.65 + i * 0.1, 0.8 + i * 0.45, z),
-                    P(x + 0.65 - i * 0.1, 0.8 + i * 0.45, z),
-                    P(x, 2.1 + i * 0.4, z)
-                ], i % 2 ? "#39794b" : "#468956", "#245d3a");
-            }
-        }
-
-        function landscaping() {
-
-            const trees = [
-                [-11, -5], [-8, 5], [-4, -5],
-                [0, 5], [4, -5], [8, 5], [10, -4]
-            ];
-
-            trees.forEach(t => tree(t[0], t[1]));
-        }
-
-
-        // ===================================
-        // SUPPORT STRUCTURES
-        // ===================================
-
-        function supportTower(x, y, z = 0) {
-
-            // Vertical steel pillar
-
-            line([
-                P(x, y, z),
-                P(x, 0.15, z)
-            ], "#e5edf4", 3);
-
-            // Cross bracing
-
-            line([
-                P(x, 0.2, z),
-                P(x + 0.35, y * 0.5, z)
-            ], "#91a6b9", 1.5);
-
-            line([
-                P(x, y * 0.5, z),
-                P(x + 0.35, 0.2, z)
-            ], "#91a6b9", 1.5);
-
-            // Footing
-
-            polygon([
-                P(x - 0.35, 0.05, z - 0.35),
-                P(x + 0.35, 0.05, z - 0.35),
-                P(x + 0.35, 0.05, z + 0.35),
-                P(x - 0.35, 0.05, z + 0.35)
-            ], "#657b8b", "#b8c6d2");
-        }
-
-        function engineering() {
-
-            // Supports under the first hill
-
-            for (let i = 0; i <= 9; i++) {
-
-                let p = track[Math.floor(i * 42 / 9)];
-
-                if (p.y > 0.8) {
-                    supportTower(p.x, p.y);
-                }
-            }
-
-            // Extra drop-side supports
-
-            for (let i = 0; i < 5; i++) {
-
-                let p = track[43 + i * 8];
-
-                if (p && p.y > 1.4) {
-                    supportTower(p.x, p.y);
-                }
-            }
-
-            // Loop support towers
-
-            for (let x of [-0.1, 1.15, 2.4]) {
-                supportTower(x, 2, -0.15);
-            }
-
-            // Diagonal loop braces
-
-            line([
-                P(-0.1, 0.3, -0.15),
-                P(2.4, 2, -0.15)
-            ], "#91a6b9", 2);
-
-            line([
-                P(2.4, 0.3, -0.15),
-                P(-0.1, 2, -0.15)
-            ], "#91a6b9", 2);
-
-            // Exit supports
-
-            for (let x of [4.2, 5.9, 7.4, 8.1]) {
-                supportTower(x, 1);
-            }
-        }
-
-
-        // ===================================
-        // TRACK RAILS AND CROSS-TIES
-        // ===================================
-
-        function drawTrack() {
-
-            // Main track spine
-
-            line(track, "#ffbf47", 5);
-
-            // Two running rails
-
-            line(
-                track.map(p => P(p.x, p.y, -0.18)),
-                "#65e5f2",
-                2.5
-            );
-
-            line(
-                track.map(p => P(p.x, p.y, 0.18)),
-                "#65e5f2",
-                2.5
-            );
-
-            // Cross ties
-
-            for (let i = 0; i < track.length; i += 3) {
-
-                let p = track[i];
-
-                line([
-                    P(p.x, p.y, -0.2),
-                    P(p.x, p.y, 0.2)
-                ], "#e5edf5", 1.3);
-            }
-        }
-
-
-        // ===================================
-        // BOARDING STATION
-        // ===================================
-
-        function station() {
-
-            polygon([
-                P(-11, 0.35, -1.3),
-                P(-8.8, 0.35, -1.3),
-                P(-8.8, 0.35, 1.3),
-                P(-11, 0.35, 1.3)
-            ], "#526b82", "#b7c8d8");
-
-            // Station columns
-
-            for (let x of [-10.8, -9.8, -8.9]) {
-
-                line([
-                    P(x, 0.35, -1.15),
-                    P(x, 1.6, -1.15)
-                ], "#dce7f1", 2);
-
-                line([
-                    P(x, 0.35, 1.15),
-                    P(x, 1.6, 1.15)
-                ], "#dce7f1", 2);
-            }
-
-            // Station roof
-
-            polygon([
-                P(-11, 1.65, -1.3),
-                P(-8.8, 1.65, -1.3),
-                P(-8.8, 1.65, 1.3),
-                P(-11, 1.65, 1.3)
-            ], "#344d69", "#c0d4e8");
-
-            label(P(-9.9, 2.1, 0), "BOARDING STATION", "#d7f5ff", 10);
-        }
-
-
-        // ===================================
-        // SAFETY FENCING
-        // ===================================
-
-        function fencing() {
-
-            // Front and rear perimeter fencing
-
-            for (let z of [-6, 6]) {
-
-                for (let x = -12; x <= 10; x += 1.5) {
-
-                    line([
-                        P(x, 0.1, z),
-                        P(x, 0.85, z)
-                    ], "#aab9c8", 1.5);
-                }
-
-                line([
-                    P(-12, 0.85, z),
-                    P(10, 0.85, z)
-                ], "#aab9c8", 1.5);
-            }
-
-            // Side fence sections
-
-            for (let x of [-12, 10]) {
-
-                line([
-                    P(x, 0.85, -6),
-                    P(x, 0.85, 6)
-                ], "#aab9c8", 1.5);
-            }
-        }
-
-
-        // ===================================
-        // LIGHTING
-        // ===================================
-
-        function lights() {
-
-            const positions = [
-                [-10, -2], [-5, 3], [0, -3],
-                [4, 3], [8, -2]
-            ];
-
-            positions.forEach(pos => {
-
-                let x = pos[0];
-                let z = pos[1];
-
-                line([
-                    P(x, 0.1, z),
-                    P(x, 2.7, z)
-                ], "#d9e6f3", 2);
-
-                line([
-                    P(x - 0.3, 2.7, z),
-                    P(x + 0.3, 2.7, z)
-                ], "#d9e6f3", 2);
-
-                // Light bulb
-
-                let q = project(P(x, 2.7, z));
-
-                ctx.beginPath();
-                ctx.arc(q.x, q.y, 4, 0, Math.PI * 2);
-                ctx.fillStyle = "#ffe59a";
-                ctx.fill();
+            const btnCam = document.getElementById('btnCam');
+            const camModes = ['ORBIT', 'POV', 'CHASE'];
+            btnCam.addEventListener('click', () => {
+                const nextIdx = (camModes.indexOf(state.camMode) + 1) % camModes.length;
+                state.camMode = camModes[nextIdx];
+                btnCam.textContent = `🎥 CAM: ${state.camMode}`;
+                btnCam.classList.toggle('active-toggle', state.camMode !== 'ORBIT');
             });
-        }
 
-
-        // ===================================
-        // FINISH LINE
-        // ===================================
-
-        function finish() {
-
-            line([
-                P(8.3, 0.1, -0.8),
-                P(8.3, 2.5, -0.8)
-            ], "white", 4);
-
-            line([
-                P(8.3, 0.1, 0.8),
-                P(8.3, 2.5, 0.8)
-            ], "white", 4);
-
-            line([
-                P(8.3, 2.3, -0.8),
-                P(8.3, 2.3, 0.8)
-            ], "white", 4);
-
-            // Checkered banner
-
-            for (let i = 0; i < 8; i++) {
-
-                let z = -0.7 + i * 0.19;
-
-                line([
-                    P(8.31, 2.05, z),
-                    P(8.31, 2.23, z)
-                ], i % 2 ? "#172033" : "white", 7);
-            }
-
-            label(P(8.4, 2.9, 0), "FINISH LINE", "#ffffff", 13);
-        }
-
-
-        // ===================================
-        // ROLLER COASTER CART
-        // ===================================
-
-        function cartPosition(t) {
-
-            let f = t * (track.length - 1);
-
-            let i = Math.min(
-                track.length - 2,
-                Math.floor(f)
-            );
-
-            let u = f - i;
-
-            let a = track[i];
-            let b = track[i + 1];
-
-            return P(
-                a.x + (b.x - a.x) * u,
-                a.y + (b.y - a.y) * u,
-                0
-            );
-        }
-
-        function drawCart() {
-
-            if (!riding) return;
-
-            let q = project(cartPosition(rideT));
-
-            ctx.save();
-            ctx.translate(q.x, q.y);
-
-            // Cart body
-
-            ctx.fillStyle = "#ff6474";
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 2;
-
-            ctx.beginPath();
-            ctx.roundRect(-13, -9, 26, 13, 4);
-            ctx.fill();
-            ctx.stroke();
-
-            // Wheels
-
-            ctx.fillStyle = "#172033";
-
-            for (let x of [-8, 8]) {
-
-                ctx.beginPath();
-                ctx.arc(x, 5, 4, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.restore();
-        }
-
-
-        // ===================================
-        // LABELS
-        // ===================================
-
-        function drawLabels() {
-
-            if (!labels) return;
-
-            label(
-                P(-7, 11, 0),
-                "1. GIANT FIRST HILL + DROP",
-                "#ffd37b",
-                13
-            );
-
-            label(
-                P(1.15, 7.3, 0),
-                "2. TEARDROP LOOP",
-                "#8deaff",
-                13
-            );
-
-            label(
-                P(8.5, 3.2, 0),
-                "3. FINISH LINE",
-                "white",
-                13
-            );
-        }
-
-
-        // ===================================
-        // MAIN RENDERING LOOP
-        // ===================================
-
-        function draw() {
-
-            let bg = ctx.createLinearGradient(0, 0, 0, H);
-
-            bg.addColorStop(0, "#101827");
-            bg.addColorStop(1, "#26394c");
-
-            ctx.fillStyle = bg;
-            ctx.fillRect(0, 0, W, H);
-
-            terrain();
-            landscaping();
-            fencing();
-            engineering();
-
-            drawTrack();
-
-            station();
-            lights();
-            finish();
-
-            drawLabels();
-            drawCart();
-
-            if (riding) {
-
-                rideT += 0.0018;
-
-                if (rideT >= 1) {
-                    rideT = 0;
-                    riding = false;
-
-                    document.getElementById("ride").textContent =
-                        "▶ START RIDE";
-                }
-            }
-
-            requestAnimationFrame(draw);
-        }
-
-        draw();
-
-
-        // ===================================
-        // MOUSE ROTATION
-        // ===================================
-
-        canvas.addEventListener("pointerdown", e => {
-
-            dragging = true;
-
-            lastX = e.clientX;
-            lastY = e.clientY;
-
-            canvas.setPointerCapture(e.pointerId);
-        });
-
-        canvas.addEventListener("pointermove", e => {
-
-            if (!dragging) return;
-
-            yaw += (e.clientX - lastX) * 0.008;
-
-            pitch = Math.max(
-                -0.15,
-                Math.min(
-                    1.05,
-                    pitch + (e.clientY - lastY) * 0.006
-                )
-            );
-
-            lastX = e.clientX;
-            lastY = e.clientY;
-        });
-
-        canvas.addEventListener("pointerup", () => {
-            dragging = false;
-        });
-
-        canvas.addEventListener("pointercancel", () => {
-            dragging = false;
-        });
-
-
-        // ===================================
-        // ZOOM
-        // ===================================
-
-        canvas.addEventListener("wheel", e => {
-
-            e.preventDefault();
-
-            zoom = Math.max(
-                0.55,
-                Math.min(
-                    1.8,
-                    zoom * (e.deltaY > 0 ? 0.92 : 1.08)
-                )
-            );
-
-        }, { passive: false });
-
-
-        // ===================================
-        // BUTTON CONTROLS
-        // ===================================
-
-        document.getElementById("ride").onclick = () => {
-
-            riding = !riding;
-
-            document.getElementById("ride").textContent =
-                riding ? "Ⅱ PAUSE RIDE" : "▶ START RIDE";
-        };
-
-        document.getElementById("labels").onclick = () => {
-
-            labels = !labels;
-
-            document.getElementById("labels").textContent =
-                labels ? "HIDE LABELS" : "SHOW LABELS";
-        };
-
-        document.getElementById("reset").onclick = () => {
-
-            yaw = -0.55;
-            pitch = 0.27;
-            zoom = 1;
-        };
-
+            const btnSpeed = document.getElementById('btnSpeed');
+            const speeds = [1.0, 1.5, 0.5];
+            btnSpeed.addEventListener('click', () => {
+                const nextIdx = (speeds.indexOf(state.speedMultiplier) + 1) % speeds.length;
+                state.speedMultiplier = speeds[nextIdx];
+                btnSpeed.textContent = `⚡ ${state.speedMultiplier.toFixed(1)}x`;
+            });
+
+            const btnLabels = document.getElementById('btnLabels');
+            btnLabels.addEventListener('click', () => {
+                state.showLabels = !state.showLabels;
+                btnLabels.classList.toggle('active-toggle', state.showLabels);
+            });
+
+            const btnForces = document.getElementById('btnForces');
+            btnForces.addEventListener('click', () => {
+                state.showVectors = !state.showVectors;
+                btnForces.classList.toggle('active-toggle', state.showVectors);
+            });
+
+            const btnNight = document.getElementById('btnNight');
+            btnNight.addEventListener('click', () => {
+                state.nightMode = !state.nightMode;
+                btnNight.textContent = state.nightMode ? '🌙 NIGHT' : '☀️ DAY';
+            });
+
+            const btnSound = document.getElementById('btnSound');
+            btnSound.addEventListener('click', () => {
+                SoundEngine.init();
+                state.soundEnabled = !state.soundEnabled;
+                btnSound.textContent = state.soundEnabled ? '🔊 AUDIO' : '🔇 AUDIO';
+                btnSound.classList.toggle('active-toggle', state.soundEnabled);
+            });
+
+            document.getElementById('btnReset').addEventListener('click', () => {
+                state.camMode = 'ORBIT';
+                btnCam.textContent = '🎥 CAM: ORBIT';
+                btnCam.classList.remove('active-toggle');
+                state.yaw = -0.52;
+                state.pitch = 0.30;
+                state.zoom = 1.0;
+                state.riding = false;
+                state.dist = 2.2;
+                state.velocity = 0;
+                btnRide.textContent = '▶ START RIDE';
+                uiRefs.status.textContent = 'READY';
+                uiRefs.status.style.color = '#4cd97b';
+            });
+
+            // Initialize stage 0 highlight
+            uiRefs.stages[0].classList.add('active');
+        })();
     </script>
 </body>
 
