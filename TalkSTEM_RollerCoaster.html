@@ -4,43 +4,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TalkSTEM 3D Roller Coaster</title>
+    <title>Project ThunderLoop - TalkSTEM</title>
+
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         html,
         body {
             margin: 0;
+            width: 100%;
             height: 100%;
             overflow: hidden;
-            background: #101827;
+            background: #091321;
             color: white;
             font-family: Arial, sans-serif;
         }
 
         canvas {
+            display: block;
             width: 100%;
             height: 100%;
-            display: block;
             cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
         }
 
         .panel {
             position: fixed;
             top: 14px;
             left: 14px;
-            padding: 13px 16px;
-            background: #101b2ddd;
-            border: 1px solid #62748c;
+            padding: 14px;
+            background: #101f32ee;
+            border: 1px solid #58718d;
             border-radius: 12px;
+            max-width: 330px;
         }
 
         h1 {
-            font-size: 18px;
-            margin: 0 0 6px
+            font-size: 19px;
+            margin: 0 0 7px;
         }
 
-        .small {
+        .sub {
             font-size: 12px;
-            color: #c4d2e4
+            color: #c2d1e1;
+            line-height: 1.6;
         }
 
         .controls {
@@ -48,16 +60,33 @@
             right: 14px;
             top: 14px;
             display: flex;
-            gap: 8px;
+            gap: 7px;
+            flex-wrap: wrap;
         }
 
         button {
-            background: #233650;
+            background: #1b3550;
             color: white;
-            border: 1px solid #8295ae;
+            border: 1px solid #7590ad;
             border-radius: 8px;
             padding: 10px;
             cursor: pointer;
+        }
+
+        button:hover {
+            background: #345071;
+        }
+
+        .legend {
+            position: fixed;
+            left: 14px;
+            bottom: 14px;
+            background: #101f32ee;
+            border: 1px solid #58718d;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 11px;
+            line-height: 1.7;
         }
 
         .hint {
@@ -65,286 +94,670 @@
             bottom: 14px;
             left: 50%;
             transform: translateX(-50%);
-            background: #101b2ddd;
+            background: #101f32ee;
+            border: 1px solid #58718d;
+            border-radius: 18px;
             padding: 10px;
-            border-radius: 15px;
-            font-size: 12px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        @media(max-width:650px) {
+            .panel {
+                max-width: 220px;
+            }
+
+            .controls {
+                top: auto;
+                bottom: 60px;
+                right: 8px;
+            }
+
+            .legend {
+                display: none;
+            }
+
+            .hint {
+                left: 8px;
+                right: 8px;
+                transform: none;
+                text-align: center;
+                white-space: normal;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <canvas id="c"></canvas>
+    <canvas id="scene"></canvas>
 
     <div class="panel">
-        <h1>TalkSTEM Roller Coaster</h1>
-        <div class="small">
-            1. Biggest Hill → 2. Teardrop Loop → 3. Finish Line
+        <h1>PROJECT THUNDERLOOP</h1>
+        <div class="sub">
+            TALKSTEM · GRADE 8 ENGINEERING MODEL<br>
+            1. Giant First Hill and Drop<br>
+            2. Teardrop Vertical Loop<br>
+            3. Finish Line<br>
+            Track · Supports · Station · Safety Features
         </div>
     </div>
 
     <div class="controls">
-        <button id="ride">▶ Ride Coaster</button>
-        <button id="reset">Reset View</button>
-        <button id="labels">Hide Labels</button>
+        <button id="ride">▶ START RIDE</button>
+        <button id="labels">HIDE LABELS</button>
+        <button id="reset">RESET VIEW</button>
+    </div>
+
+    <div class="legend">
+        <b>ENGINEERING MODEL KEY</b><br>
+        🟠 Main track<br>
+        🔵 Twin running rails<br>
+        ⚪ Steel support columns<br>
+        🔴 Moving coaster cart<br>
+        🟢 Landscaping<br>
+        <br>
+        <b>Additional features</b><br>
+        • Cross-bracing<br>
+        • Boarding station<br>
+        • Support footings<br>
+        • Safety fencing<br>
+        • Maintenance paths
     </div>
 
     <div class="hint">
-        Drag to rotate · Scroll to zoom · Click Ride Coaster
+        Drag to rotate · Scroll to zoom · Press START RIDE
     </div>
 
     <script>
-        const canvas = document.getElementById("c");
+
+        const canvas = document.getElementById("scene");
         const ctx = canvas.getContext("2d");
 
-        let W, H, dpr;
-        let yaw = -0.48;
-        let pitch = 0.26;
+        let W, H, D;
+        let yaw = -0.55;
+        let pitch = 0.27;
         let zoom = 1;
+
         let dragging = false;
-        let lastX = 0, lastY = 0;
+        let lastX = 0;
+        let lastY = 0;
+
         let labels = true;
-        let playing = false;
-        let t = 0;
+        let riding = false;
+        let rideT = 0;
 
         function resize() {
-            dpr = Math.min(devicePixelRatio || 1, 2);
+            D = Math.min(devicePixelRatio || 1, 2);
             W = innerWidth;
             H = innerHeight;
-            canvas.width = W * dpr;
-            canvas.height = H * dpr;
+
+            canvas.width = W * D;
+            canvas.height = H * D;
+
             canvas.style.width = W + "px";
             canvas.style.height = H + "px";
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            ctx.setTransform(D, 0, 0, D, 0, 0);
         }
+
         addEventListener("resize", resize);
         resize();
 
         const P = (x, y, z = 0) => ({ x, y, z });
-        const track = [];
 
-        function add(x, y, z = 0) {
-            track.push(P(x, y, z));
-        }
 
-        function bez(a, b, c, d, n) {
-            for (let i = 0; i <= n; i++) {
-                let u = i / n, v = 1 - u;
-                add(
-                    v * v * v * a.x + 3 * v * v * u * b.x + 3 * v * u * u * c.x + u * u * u * d.x,
-                    v * v * v * a.y + 3 * v * v * u * b.y + 3 * v * u * u * c.y + u * u * u * d.y
-                );
-            }
-        }
-
-        // 1. BIGGEST HILL AND FIRST DROP
-
-        bez(
-            P(-9, 1),
-            P(-8, 1.2),
-            P(-7.7, 9.2),
-            P(-4.9, 9.2),
-            38
-        );
-
-        bez(
-            P(-4.9, 9.2),
-            P(-3.3, 9.2),
-            P(-2.5, 2),
-            P(-0.6, 1.15),
-            36
-        );
-
-        // 2. TEARDROP-SHAPED LOOP
-
-        for (let i = 1; i <= 100; i++) {
-            const u = i / 100;
-            const a = -Math.PI / 2 + u * 2 * Math.PI;
-
-            const x = 1.55 +
-                1.5 * Math.sin(a) *
-                (0.78 + 0.22 * Math.cos(a));
-
-            const y = 1.15 +
-                5.15 * (1 + Math.cos(a)) / 2;
-
-            add(x, y);
-        }
-
-        // EXIT AFTER LOOP
-
-        bez(
-            P(1.55, 1.15),
-            P(2.8, 1.15),
-            P(4.2, 1),
-            P(5.3, 0.95),
-            22
-        );
-
-        bez(
-            P(5.3, 0.95),
-            P(6.3, 0.9),
-            P(7, 1),
-            P(8.2, 1),
-            18
-        );
-
+        // ===================================
         // 3D PROJECTION
+        // ===================================
 
         function project(p) {
+
             let cy = Math.cos(yaw);
             let sy = Math.sin(yaw);
+
             let cp = Math.cos(pitch);
             let sp = Math.sin(pitch);
 
             let x = p.x * cy - p.z * sy;
             let z = p.x * sy + p.z * cy;
+
             let y = p.y * cp - z * sp;
 
             z = p.y * sp + z * cp;
 
-            let s = Math.min(W, H) * 0.79 * zoom / (z + 15);
+            let s = Math.min(W, H) * 0.79 * zoom / (z + 20);
 
             return {
                 x: W / 2 + x * s,
                 y: H * 0.66 - y * s,
-                s
+                s: s
             };
         }
 
-        function line(arr, color, width) {
+        function line(points, color, width = 2) {
+
             ctx.beginPath();
 
-            arr.forEach((p, i) => {
+            points.forEach((p, i) => {
                 let q = project(p);
-                if (i) ctx.lineTo(q.x, q.y);
-                else ctx.moveTo(q.x, q.y);
+
+                if (i === 0) {
+                    ctx.moveTo(q.x, q.y);
+                } else {
+                    ctx.lineTo(q.x, q.y);
+                }
             });
 
             ctx.strokeStyle = color;
             ctx.lineWidth = width;
-            ctx.lineCap = "round";
             ctx.lineJoin = "round";
+            ctx.lineCap = "round";
             ctx.stroke();
         }
 
-        function label(p, text, color) {
+        function polygon(points, fill, stroke = "#53677b") {
+
+            let q = points.map(project);
+
+            ctx.beginPath();
+
+            q.forEach((p, i) => {
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+
+            ctx.closePath();
+
+            ctx.fillStyle = fill;
+            ctx.fill();
+
+            ctx.strokeStyle = stroke;
+            ctx.stroke();
+        }
+
+        function label(p, text, color = "white", size = 12) {
+
             let q = project(p);
-            ctx.font = "bold 13px Arial";
+
+            ctx.font = `bold ${size}px Arial`;
             ctx.textAlign = "center";
-            ctx.fillStyle = "#06101d";
-            ctx.fillText(text, q.x + 1, q.y + 1);
+
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#07111d";
+
+            ctx.strokeText(text, q.x, q.y);
+
             ctx.fillStyle = color;
             ctx.fillText(text, q.x, q.y);
         }
 
-        // GROUND
 
-        function ground() {
-            let corners = [
-                P(-11, 0, -4),
-                P(10, 0, -4),
-                P(10, 0, 4),
-                P(-11, 0, 4)
-            ].map(project);
+        // ===================================
+        // TRACK CREATION
+        // ===================================
 
-            ctx.beginPath();
+        const track = [];
 
-            corners.forEach((p, i) => {
-                if (i) ctx.lineTo(p.x, p.y);
-                else ctx.moveTo(p.x, p.y);
-            });
+        function bezier(out, a, b, c, d, n) {
 
-            ctx.closePath();
-            ctx.fillStyle = "#1a2b3c";
-            ctx.fill();
-            ctx.strokeStyle = "#40556b";
-            ctx.stroke();
+            for (let i = 0; i <= n; i++) {
 
-            for (let x = -10; x <= 9; x += 2) {
-                line([P(x, 0.01, -4), P(x, 0.01, 4)],
-                    "#60758a44", 1);
+                let u = i / n;
+                let v = 1 - u;
+
+                let x =
+                    v * v * v * a.x +
+                    3 * v * v * u * b.x +
+                    3 * v * u * u * c.x +
+                    u * u * u * d.x;
+
+                let y =
+                    v * v * v * a.y +
+                    3 * v * v * u * b.y +
+                    3 * v * u * u * c.y +
+                    u * u * u * d.y;
+
+                out.push(P(x, y, 0));
             }
         }
 
-        // SUPPORT PILLARS
 
-        function supports() {
+        // 1. BIGGEST FIRST HILL
 
-            // Tall first hill supports
-            for (let i = 0; i <= 12; i++) {
-                let p = track[Math.floor(i * 37 / 12)];
+        bezier(
+            track,
+            P(-10, 1),
+            P(-8.8, 1.1),
+            P(-8.4, 10.2),
+            P(-5.6, 10.2),
+            42
+        );
 
-                if (p.y > 1.4) {
-                    line([
-                        P(p.x, p.y, 0),
-                        P(p.x, 0.08, 0)
-                    ], "#d7e3ef", 3);
+
+        // 1B. STEEP FIRST DROP
+
+        bezier(
+            track,
+            P(-5.6, 10.2),
+            P(-3.8, 10.2),
+            P(-3.5, 2),
+            P(-1.2, 1.25),
+            40
+        );
+
+
+        // 2. TEARDROP-SHAPED VERTICAL LOOP
+
+        const loopCenter = -1.2;
+        const loopBase = 1.25;
+
+        for (let i = 1; i <= 120; i++) {
+
+            let a = (i / 120) * Math.PI * 2;
+
+            let x =
+                loopCenter +
+                1.65 * Math.sin(a) *
+                (0.76 + 0.24 * Math.cos(a));
+
+            let y =
+                loopBase +
+                5.25 * (1 - Math.cos(a)) / 2;
+
+            track.push(P(x, y, 0));
+        }
+
+
+        // 3. EXIT TRACK AND FINISH
+
+        bezier(
+            track,
+            P(-1.2, 1.25),
+            P(0.1, 1.2),
+            P(2.7, 0.95),
+            P(4.0, 0.95),
+            24
+        );
+
+        bezier(
+            track,
+            P(4.0, 0.95),
+            P(5.5, 0.9),
+            P(7.2, 1),
+            P(8.4, 1),
+            25
+        );
+
+
+        // ===================================
+        // GROUND AND LANDSCAPING
+        // ===================================
+
+        function terrain() {
+
+            polygon([
+                P(-13, -0.03, -7),
+                P(12, -0.03, -7),
+                P(12, -0.03, 7),
+                P(-13, -0.03, 7)
+            ], "#203a3c", "#49615e");
+
+            // Ground grid
+
+            for (let x = -12; x <= 11; x += 2) {
+                line([
+                    P(x, 0, -7),
+                    P(x, 0, 7)
+                ], "#8ca69b33", 1);
+            }
+
+            for (let z = -6; z <= 6; z += 2) {
+                line([
+                    P(-13, 0, z),
+                    P(12, 0, z)
+                ], "#8ca69b33", 1);
+            }
+
+            // Decorative grass patches
+
+            for (let i = 0; i < 12; i++) {
+
+                let x = -11 + i * 2;
+                let z = i % 2 ? 4.2 : -4.2;
+
+                polygon([
+                    P(x - 0.6, 0.04, z - 0.5),
+                    P(x + 0.6, 0.04, z - 0.5),
+                    P(x + 0.6, 0.04, z + 0.5),
+                    P(x - 0.6, 0.04, z + 0.5)
+                ], "#315c40", "#527b50");
+            }
+        }
+
+
+        // ===================================
+        // TREES
+        // ===================================
+
+        function tree(x, z) {
+
+            line([
+                P(x, 0.1, z),
+                P(x, 1.1, z)
+            ], "#926344", 5);
+
+            // Layered green foliage
+
+            for (let i = 0; i < 3; i++) {
+
+                polygon([
+                    P(x - 0.65 + i * 0.1, 0.8 + i * 0.45, z),
+                    P(x + 0.65 - i * 0.1, 0.8 + i * 0.45, z),
+                    P(x, 2.1 + i * 0.4, z)
+                ], i % 2 ? "#39794b" : "#468956", "#245d3a");
+            }
+        }
+
+        function landscaping() {
+
+            const trees = [
+                [-11, -5], [-8, 5], [-4, -5],
+                [0, 5], [4, -5], [8, 5], [10, -4]
+            ];
+
+            trees.forEach(t => tree(t[0], t[1]));
+        }
+
+
+        // ===================================
+        // SUPPORT STRUCTURES
+        // ===================================
+
+        function supportTower(x, y, z = 0) {
+
+            // Vertical steel pillar
+
+            line([
+                P(x, y, z),
+                P(x, 0.15, z)
+            ], "#e5edf4", 3);
+
+            // Cross bracing
+
+            line([
+                P(x, 0.2, z),
+                P(x + 0.35, y * 0.5, z)
+            ], "#91a6b9", 1.5);
+
+            line([
+                P(x, y * 0.5, z),
+                P(x + 0.35, 0.2, z)
+            ], "#91a6b9", 1.5);
+
+            // Footing
+
+            polygon([
+                P(x - 0.35, 0.05, z - 0.35),
+                P(x + 0.35, 0.05, z - 0.35),
+                P(x + 0.35, 0.05, z + 0.35),
+                P(x - 0.35, 0.05, z + 0.35)
+            ], "#657b8b", "#b8c6d2");
+        }
+
+        function engineering() {
+
+            // Supports under the first hill
+
+            for (let i = 0; i <= 9; i++) {
+
+                let p = track[Math.floor(i * 42 / 9)];
+
+                if (p.y > 0.8) {
+                    supportTower(p.x, p.y);
                 }
             }
 
-            // Loop supports
-            for (let x of [0.45, 1.55, 2.65]) {
-                line([
-                    P(x, 2, -0.12),
-                    P(x, 0.08, -0.12)
-                ], "#d7e3ef", 3);
+            // Extra drop-side supports
+
+            for (let i = 0; i < 5; i++) {
+
+                let p = track[43 + i * 8];
+
+                if (p && p.y > 1.4) {
+                    supportTower(p.x, p.y);
+                }
             }
 
-            line([
-                P(0.45, 0.1, -0.12),
-                P(2.65, 2, -0.12)
-            ], "#8197b1", 2);
+            // Loop support towers
+
+            for (let x of [-0.1, 1.15, 2.4]) {
+                supportTower(x, 2, -0.15);
+            }
+
+            // Diagonal loop braces
 
             line([
-                P(2.65, 0.1, -0.12),
-                P(0.45, 2, -0.12)
-            ], "#8197b1", 2);
+                P(-0.1, 0.3, -0.15),
+                P(2.4, 2, -0.15)
+            ], "#91a6b9", 2);
 
-            // Final supports
-            for (let x of [4.3, 6.2, 7.9]) {
-                line([
-                    P(x, 1, 0),
-                    P(x, 0.08, 0)
-                ], "#d7e3ef", 3);
+            line([
+                P(2.4, 0.3, -0.15),
+                P(-0.1, 2, -0.15)
+            ], "#91a6b9", 2);
+
+            // Exit supports
+
+            for (let x of [4.2, 5.9, 7.4, 8.1]) {
+                supportTower(x, 1);
             }
         }
 
+
+        // ===================================
+        // TRACK RAILS AND CROSS-TIES
+        // ===================================
+
+        function drawTrack() {
+
+            // Main track spine
+
+            line(track, "#ffbf47", 5);
+
+            // Two running rails
+
+            line(
+                track.map(p => P(p.x, p.y, -0.18)),
+                "#65e5f2",
+                2.5
+            );
+
+            line(
+                track.map(p => P(p.x, p.y, 0.18)),
+                "#65e5f2",
+                2.5
+            );
+
+            // Cross ties
+
+            for (let i = 0; i < track.length; i += 3) {
+
+                let p = track[i];
+
+                line([
+                    P(p.x, p.y, -0.2),
+                    P(p.x, p.y, 0.2)
+                ], "#e5edf5", 1.3);
+            }
+        }
+
+
+        // ===================================
+        // BOARDING STATION
+        // ===================================
+
+        function station() {
+
+            polygon([
+                P(-11, 0.35, -1.3),
+                P(-8.8, 0.35, -1.3),
+                P(-8.8, 0.35, 1.3),
+                P(-11, 0.35, 1.3)
+            ], "#526b82", "#b7c8d8");
+
+            // Station columns
+
+            for (let x of [-10.8, -9.8, -8.9]) {
+
+                line([
+                    P(x, 0.35, -1.15),
+                    P(x, 1.6, -1.15)
+                ], "#dce7f1", 2);
+
+                line([
+                    P(x, 0.35, 1.15),
+                    P(x, 1.6, 1.15)
+                ], "#dce7f1", 2);
+            }
+
+            // Station roof
+
+            polygon([
+                P(-11, 1.65, -1.3),
+                P(-8.8, 1.65, -1.3),
+                P(-8.8, 1.65, 1.3),
+                P(-11, 1.65, 1.3)
+            ], "#344d69", "#c0d4e8");
+
+            label(P(-9.9, 2.1, 0), "BOARDING STATION", "#d7f5ff", 10);
+        }
+
+
+        // ===================================
+        // SAFETY FENCING
+        // ===================================
+
+        function fencing() {
+
+            // Front and rear perimeter fencing
+
+            for (let z of [-6, 6]) {
+
+                for (let x = -12; x <= 10; x += 1.5) {
+
+                    line([
+                        P(x, 0.1, z),
+                        P(x, 0.85, z)
+                    ], "#aab9c8", 1.5);
+                }
+
+                line([
+                    P(-12, 0.85, z),
+                    P(10, 0.85, z)
+                ], "#aab9c8", 1.5);
+            }
+
+            // Side fence sections
+
+            for (let x of [-12, 10]) {
+
+                line([
+                    P(x, 0.85, -6),
+                    P(x, 0.85, 6)
+                ], "#aab9c8", 1.5);
+            }
+        }
+
+
+        // ===================================
+        // LIGHTING
+        // ===================================
+
+        function lights() {
+
+            const positions = [
+                [-10, -2], [-5, 3], [0, -3],
+                [4, 3], [8, -2]
+            ];
+
+            positions.forEach(pos => {
+
+                let x = pos[0];
+                let z = pos[1];
+
+                line([
+                    P(x, 0.1, z),
+                    P(x, 2.7, z)
+                ], "#d9e6f3", 2);
+
+                line([
+                    P(x - 0.3, 2.7, z),
+                    P(x + 0.3, 2.7, z)
+                ], "#d9e6f3", 2);
+
+                // Light bulb
+
+                let q = project(P(x, 2.7, z));
+
+                ctx.beginPath();
+                ctx.arc(q.x, q.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = "#ffe59a";
+                ctx.fill();
+            });
+        }
+
+
+        // ===================================
         // FINISH LINE
+        // ===================================
 
         function finish() {
 
             line([
-                P(8.05, 0.08, -0.65),
-                P(8.05, 2.4, -0.65)
+                P(8.3, 0.1, -0.8),
+                P(8.3, 2.5, -0.8)
             ], "white", 4);
 
             line([
-                P(8.05, 0.08, 0.65),
-                P(8.05, 2.4, 0.65)
+                P(8.3, 0.1, 0.8),
+                P(8.3, 2.5, 0.8)
             ], "white", 4);
 
             line([
-                P(8.05, 2.3, -0.65),
-                P(8.05, 2.3, 0.65)
+                P(8.3, 2.3, -0.8),
+                P(8.3, 2.3, 0.8)
             ], "white", 4);
+
+            // Checkered banner
 
             for (let i = 0; i < 8; i++) {
-                let z = -0.56 + i * 0.16;
+
+                let z = -0.7 + i * 0.19;
 
                 line([
-                    P(8.06, 2.05, z),
-                    P(8.06, 2.22, z)
+                    P(8.31, 2.05, z),
+                    P(8.31, 2.23, z)
                 ], i % 2 ? "#172033" : "white", 7);
             }
+
+            label(P(8.4, 2.9, 0), "FINISH LINE", "#ffffff", 13);
         }
 
-        // CART POSITION
 
-        function cartPoint(v) {
-            let f = v * (track.length - 1);
-            let i = Math.min(track.length - 2, Math.floor(f));
+        // ===================================
+        // ROLLER COASTER CART
+        // ===================================
+
+        function cartPosition(t) {
+
+            let f = t * (track.length - 1);
+
+            let i = Math.min(
+                track.length - 2,
+                Math.floor(f)
+            );
+
             let u = f - i;
 
             let a = track[i];
@@ -358,89 +771,109 @@
         }
 
         function drawCart() {
-            if (!playing) return;
 
-            let q = project(cartPoint(t));
+            if (!riding) return;
+
+            let q = project(cartPosition(rideT));
 
             ctx.save();
             ctx.translate(q.x, q.y);
 
-            ctx.fillStyle = "#ff5964";
+            // Cart body
+
+            ctx.fillStyle = "#ff6474";
             ctx.strokeStyle = "white";
             ctx.lineWidth = 2;
 
             ctx.beginPath();
-            ctx.roundRect(-11, -7, 22, 11, 4);
+            ctx.roundRect(-13, -9, 26, 13, 4);
             ctx.fill();
             ctx.stroke();
 
-            ctx.fillStyle = "#182438";
+            // Wheels
 
-            for (let x of [-6, 6]) {
+            ctx.fillStyle = "#172033";
+
+            for (let x of [-8, 8]) {
+
                 ctx.beginPath();
-                ctx.arc(x, 5, 3, 0, Math.PI * 2);
+                ctx.arc(x, 5, 4, 0, Math.PI * 2);
                 ctx.fill();
             }
 
             ctx.restore();
         }
 
-        // MAIN DISPLAY
+
+        // ===================================
+        // LABELS
+        // ===================================
+
+        function drawLabels() {
+
+            if (!labels) return;
+
+            label(
+                P(-7, 11, 0),
+                "1. GIANT FIRST HILL + DROP",
+                "#ffd37b",
+                13
+            );
+
+            label(
+                P(1.15, 7.3, 0),
+                "2. TEARDROP LOOP",
+                "#8deaff",
+                13
+            );
+
+            label(
+                P(8.5, 3.2, 0),
+                "3. FINISH LINE",
+                "white",
+                13
+            );
+        }
+
+
+        // ===================================
+        // MAIN RENDERING LOOP
+        // ===================================
 
         function draw() {
 
             let bg = ctx.createLinearGradient(0, 0, 0, H);
+
             bg.addColorStop(0, "#101827");
             bg.addColorStop(1, "#26394c");
 
             ctx.fillStyle = bg;
             ctx.fillRect(0, 0, W, H);
 
-            ground();
-            supports();
+            terrain();
+            landscaping();
+            fencing();
+            engineering();
 
-            // Main track
-            line(track, "#f5ad36", 5);
+            drawTrack();
 
-            // Twin rails
-            line(
-                track.map(p => P(p.x, p.y, -0.16)),
-                "#58d9ee", 2.5
-            );
-
-            line(
-                track.map(p => P(p.x, p.y, 0.16)),
-                "#58d9ee", 2.5
-            );
-
-            // Cross ties
-            for (let i = 0; i < track.length; i += 4) {
-                let p = track[i];
-
-                line([
-                    P(p.x, p.y, -0.18),
-                    P(p.x, p.y, 0.18)
-                ], "#e3edf6", 1.4);
-            }
-
+            station();
+            lights();
             finish();
 
-            if (labels) {
-                label(P(-6.5, 10), "1. BIGGEST HILL + DROP", "#ffd37b");
-                label(P(1.55, 7), "2. TEARDROP LOOP", "#8deaff");
-                label(P(8.2, 2.8), "3. FINISH LINE", "white");
-            }
-
+            drawLabels();
             drawCart();
 
-            if (playing) {
-                t += 0.0018;
+            if (riding) {
 
-                if (t >= 1) {
-                    t = 0;
-                    playing = false;
+                rideT += 0.0018;
+
+                if (rideT >= 1) {
+                    rideT = 0;
+                    riding = false;
+
                     document.getElementById("ride").textContent =
-                        "▶ Ride Coaster";
+                        "▶ START RIDE";
                 }
             }
 
@@ -449,23 +882,31 @@
 
         draw();
 
-        // ROTATE WITH MOUSE
+
+        // ===================================
+        // MOUSE ROTATION
+        // ===================================
 
         canvas.addEventListener("pointerdown", e => {
+
             dragging = true;
+
             lastX = e.clientX;
             lastY = e.clientY;
+
             canvas.setPointerCapture(e.pointerId);
         });
 
         canvas.addEventListener("pointermove", e => {
+
             if (!dragging) return;
 
             yaw += (e.clientX - lastX) * 0.008;
 
             pitch = Math.max(
                 -0.15,
-                Math.min(1.05,
+                Math.min(
+                    1.05,
                     pitch + (e.clientY - lastY) * 0.006
                 )
             );
@@ -474,42 +915,59 @@
             lastY = e.clientY;
         });
 
-        canvas.addEventListener("pointerup", () => dragging = false);
-        canvas.addEventListener("pointercancel", () => dragging = false);
+        canvas.addEventListener("pointerup", () => {
+            dragging = false;
+        });
 
+        canvas.addEventListener("pointercancel", () => {
+            dragging = false;
+        });
+
+
+        // ===================================
         // ZOOM
+        // ===================================
 
         canvas.addEventListener("wheel", e => {
+
             e.preventDefault();
 
             zoom = Math.max(
                 0.55,
-                Math.min(1.8,
+                Math.min(
+                    1.8,
                     zoom * (e.deltaY > 0 ? 0.92 : 1.08)
                 )
             );
+
         }, { passive: false });
 
-        // BUTTONS
+
+        // ===================================
+        // BUTTON CONTROLS
+        // ===================================
 
         document.getElementById("ride").onclick = () => {
-            playing = !playing;
+
+            riding = !riding;
 
             document.getElementById("ride").textContent =
-                playing ? "Ⅱ Pause Ride" : "▶ Ride Coaster";
-        };
-
-        document.getElementById("reset").onclick = () => {
-            yaw = -0.48;
-            pitch = 0.26;
-            zoom = 1;
+                riding ? "Ⅱ PAUSE RIDE" : "▶ START RIDE";
         };
 
         document.getElementById("labels").onclick = () => {
+
             labels = !labels;
 
             document.getElementById("labels").textContent =
-                labels ? "Hide Labels" : "Show Labels";
+                labels ? "HIDE LABELS" : "SHOW LABELS";
+        };
+
+        document.getElementById("reset").onclick = () => {
+
+            yaw = -0.55;
+            pitch = 0.27;
+            zoom = 1;
         };
 
     </script>
